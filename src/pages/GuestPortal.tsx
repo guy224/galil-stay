@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
-import { supabase } from '../../lib/supabase';
-import { Booking } from '../../types/supabase';
+import { supabase } from '../lib/supabase';
+import { Booking } from '../types/supabase';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { GateCodeCard } from '../../components/guest/GateCodeCard';
-import { BreakfastOrder } from '../../components/guest/BreakfastOrder';
-import { QuickActions } from '../../components/guest/QuickActions';
+import { GateCodeCard } from '../components/guest/GateCodeCard';
+import { BreakfastOrder } from '../components/guest/BreakfastOrder';
+import { QuickActions } from '../components/guest/QuickActions';
 
 export default function GuestPortal() {
     const { id } = useParams<{ id: string }>();
