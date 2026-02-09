@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { format } from 'date-fns';
-import { Loader2, Search, Coffee, Broom, Inbox } from 'lucide-react';
+import { Loader2, Search, Coffee, Sparkles, Inbox } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Booking } from '../../types/supabase';
 import { Card, CardContent } from '../../components/ui/Card';
@@ -96,12 +96,12 @@ export function BookingList() {
                                     )}
                                     {booking.is_clean ? (
                                         <Badge variant="success" className="bg-green-100 text-green-700 hover:bg-green-200">
-                                            <Broom className="h-3 w-3 mr-1" />
+                                            <Sparkles className="h-3 w-3 mr-1" />
                                             נקי
                                         </Badge>
                                     ) : (
                                         <Badge variant="outline" className="text-gray-400 border-gray-200 hidden sm:inline-flex">
-                                            <Broom className="h-3 w-3 mr-1" />
+                                            <Sparkles className="h-3 w-3 mr-1" />
                                             לא נקי
                                         </Badge>
                                     )}

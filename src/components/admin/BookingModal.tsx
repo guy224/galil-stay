@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { X, MessageCircle, Broom, Coffee, Check, Save } from 'lucide-react';
+import { X, MessageCircle, Sparkles, Coffee, Check, Save } from 'lucide-react';
 import { Booking } from '../../types/supabase';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
@@ -133,7 +133,7 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className={`p-2 rounded-full ${booking.is_clean ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-500'}`}>
-                                    <Broom className="h-6 w-6" />
+                                    <Sparkles className="h-6 w-6" />
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-lg">סטטוס ניקיון</h3>
