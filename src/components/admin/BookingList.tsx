@@ -8,6 +8,8 @@ import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { BookingModal } from './BookingModal';
+import { ActionConfirmModal } from './ActionConfirmModal';
+import { MessageType } from '../../utils/whatsappUtils';
 
 interface BookingListProps {
     initialBookings?: Booking[];
@@ -22,6 +24,9 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [search, setSearch] = useState('');
     const [processingId, setProcessingId] = useState<string | null>(null);
+
+    // ACTION TRIGGER STATE
+    const [confirmAction, setConfirmAction] = useState<{ booking: Booking, type: MessageType, title: string } | null>(null);
 
     // Sync props to state if provided
     useEffect(() => {
@@ -45,21 +50,32 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
         setLoading(false);
     };
 
-    const handleStatusUpdate = async (id: string, newStatus: 'approved' | 'declined') => {
-        setProcessingId(id);
+    const handleStatusUpdate = async (booking: Booking, newStatus: 'approved' | 'declined') => {
+        setProcessingId(booking.id);
         const { error } = await supabase
             .from('bookings')
             .update({ status: newStatus })
-            .eq('id', id);
+            .eq('id', booking.id);
+
+        setProcessingId(null);
 
         if (error) {
             console.error('Error updating status:', error);
             alert('שגיאה בעדכון הסטטוס');
         } else {
+            // Update local state first to feel responsive
             if (onUpdate) await onUpdate();
             else fetchBookings();
+
+            // IMMEDIATE ACTION TRIGGER
+            if (newStatus === 'approved') {
+                setConfirmAction({
+                    booking,
+                    type: 'confirmed',
+                    title: 'ההזמנה אושרה בהצלחה!'
+                });
+            }
         }
-        setProcessingId(null);
     };
 
     const filteredBookings = bookings.filter(b => {
@@ -93,6 +109,7 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                                 <button
                                     onClick={onClearFilter}
                                     className="text-xs text-gray-400 hover:text-red-500 underline transition-colors"
+                                    onClick={onClearFilter}
                                 >
                                     נקה סינון
                                 </button>
@@ -211,7 +228,10 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                                                     <Button
                                                         size="sm"
                                                         className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700 rounded-full"
-                                                        onClick={() => handleStatusUpdate(booking.id, 'approved')}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleStatusUpdate(booking, 'approved');
+                                                        }}
                                                         isLoading={processingId === booking.id}
                                                     >
                                                         <Check className="h-4 w-4" />
@@ -220,7 +240,10 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                                                         size="sm"
                                                         variant="ghost"
                                                         className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 rounded-full"
-                                                        onClick={() => handleStatusUpdate(booking.id, 'declined')}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleStatusUpdate(booking, 'declined');
+                                                        }}
                                                         isLoading={processingId === booking.id}
                                                     >
                                                         <X className="h-4 w-4" />
@@ -248,10 +271,22 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                     onUpdate={() => {
                         if (onUpdate) onUpdate();
                         else fetchBookings();
+                        // We intentionally DON'T reset selectedBooking here if we want to show a toast,
+                        // but for the Modal flow we might just want to close it or keep it open.
+                        // However, the action modal below handles the post-action flow.
                         setSelectedBooking(null);
                     }}
                 />
             )}
+
+            {/* IMMEDIATE TRIGGER MODAL */}
+            <ActionConfirmModal
+                isOpen={!!confirmAction}
+                onClose={() => setConfirmAction(null)}
+                booking={confirmAction?.booking || null}
+                actionType={confirmAction?.type || null}
+                title={confirmAction?.title}
+            />
         </Card>
     );
 }
