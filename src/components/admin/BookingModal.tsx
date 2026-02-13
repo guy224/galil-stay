@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { X, MessageCircle, Sparkles, Coffee, Check, Save, User, Calendar, Phone } from 'lucide-react';
+import { X, MessageCircle, Sparkles, Coffee, Check, Save, User, Calendar, Phone, Send } from 'lucide-react';
 import { Booking } from '../../types/supabase';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { Switch } from '../ui/Switch';
 import { Badge } from '../ui/Badge';
 import { useToast } from '../ui/Toast';
+import { generateWhatsAppLink } from '../../utils/whatsappUtils';
 
 interface BookingModalProps {
     booking: Booking;
@@ -33,23 +34,6 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
     }, [isOpen]);
 
     if (!isOpen) return null;
-
-    // --- Logic 1: WhatsApp Generator ---
-    const generateWhatsAppLink = () => {
-        const phone = booking.guest_phone.replace(/^0/, '972').replace(/\D/g, ''); // Ensure clean number
-        const guestUrl = `${window.location.origin}/guest/${booking.id}`;
-        let message = "";
-
-        if (booking.is_clean) {
-            message = `היי ${booking.guest_name}, החדר מוכן והקוד לשער מחכה לך באפליקציה! 🏠 חופשה נעימה.\n\n לפרטים: ${guestUrl}`;
-        } else if (booking.status === 'approved') {
-            message = `היי ${booking.guest_name}, ההזמנה אושרה! איזה כיף.\nלניהול החופשה ופרטים נוספים: ${guestUrl}`;
-        } else {
-            message = `היי ${booking.guest_name}, תודה על ההזמנה! אנחנו בודקים את הפרטים ונחזור אליך בהקדם.`;
-        }
-
-        return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    };
 
     // --- Logic 2: Cleaning Toggle ---
     const toggleClean = async (checked: boolean) => {
@@ -169,6 +153,54 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                         </div>
                     </div>
 
+                    {/* WhatsApp Communication Engine */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                            <h3 className="uppercase text-xs font-bold text-gray-400 tracking-wider">תקשורת עם האורח</h3>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 h-4 bg-green-50 text-green-700 hover:bg-green-100">WhatsApp Engine</Badge>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3">
+                            <a
+                                href={generateWhatsAppLink(booking, 'confirmed')}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-full"
+                            >
+                                <Button variant="outline" className="w-full justify-start text-green-700 bg-green-50 hover:bg-green-100 border-green-200">
+                                    <MessageCircle className="h-4 w-4 mr-2" />
+                                    שלח אישור הזמנה (וואטסאפ)
+                                </Button>
+                            </a>
+
+                            <a
+                                href={generateWhatsAppLink(booking, 'arrival')}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-full"
+                            >
+                                <Button variant="outline" className="w-full justify-start text-blue-700 bg-blue-50 hover:bg-blue-100 border-blue-200">
+                                    <Send className="h-4 w-4 mr-2" />
+                                    שלח הוראות הגעה וקוד
+                                </Button>
+                            </a>
+
+                            {booking.breakfast_ordered && (
+                                <a
+                                    href={generateWhatsAppLink(booking, 'breakfast')}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="w-full"
+                                >
+                                    <Button variant="outline" className="w-full justify-start text-orange-700 bg-orange-50 hover:bg-orange-100 border-orange-200">
+                                        <Coffee className="h-4 w-4 mr-2" />
+                                        שלח אישור ארוחת בוקר
+                                    </Button>
+                                </a>
+                            )}
+                        </div>
+                    </div>
+
                     {/* 1. Status & General Actions */}
                     {booking.status === 'pending' && (
                         <div className="bg-orange-50 p-5 rounded-xl border border-orange-200 text-center space-y-3">
@@ -241,20 +273,7 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                     </div>
                 </div>
 
-                {/* Footer Actions */}
-                <div className="p-4 border-t bg-gray-50">
-                    <a
-                        href={generateWhatsAppLink()}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block w-full"
-                    >
-                        <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white shadow-lg shadow-green-100">
-                            <MessageCircle className="mr-2 h-4 w-4" />
-                            שלח הודעה לאורח
-                        </Button>
-                    </a>
-                </div>
+                {/* Footer Actions - REMOVED GENERIC WHATSAPP */}
 
             </div>
         </div>
