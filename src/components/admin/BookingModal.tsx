@@ -7,7 +7,8 @@ import { Button } from '../ui/Button';
 import { Switch } from '../ui/Switch';
 import { Badge } from '../ui/Badge';
 import { useToast } from '../ui/Toast';
-import { generateWhatsAppLink } from '../../utils/whatsappUtils';
+import { generateWhatsAppLink, MessageType } from '../../utils/whatsappUtils';
+import { ActionConfirmModal } from './ActionConfirmModal';
 
 interface BookingModalProps {
     booking: Booking;
@@ -19,6 +20,7 @@ interface BookingModalProps {
 export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModalProps) {
     const [loading, setLoading] = useState(false);
     const [breakfastMenu, setBreakfastMenu] = useState(booking.breakfast_menu || '');
+    const [confirmAction, setConfirmAction] = useState<{ type: MessageType, title: string } | null>(null);
     const { addToast } = useToast();
 
     // Prevent body scroll when modal is open
@@ -27,6 +29,7 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = 'unset';
+            setConfirmAction(null); // Reset on close
         }
         return () => {
             document.body.style.overflow = 'unset';
@@ -50,7 +53,7 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
         }
     };
 
-    // --- Logic 3: Breakfast Approval (ACTION TRIGGER) ---
+    // --- Logic 3: Breakfast Approval (ACTION TRIGGER -> MODAL) ---
     const approveBreakfast = async () => {
         setLoading(true);
         const { error } = await supabase
@@ -64,18 +67,14 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
         setLoading(false);
         if (!error) {
             onUpdate();
-            addToast('ארוחת הבוקר אושרה! פותח וואטסאפ...', 'success');
-
-            // ACTION TRIGGER: Open WhatsApp immediately
-            const link = generateWhatsAppLink(booking, 'breakfast');
-            window.open(link, '_blank');
-
+            // Show Confirm Modal
+            setConfirmAction({ type: 'breakfast', title: 'ארוחת הבוקר אושרה בהצלחה' });
         } else {
             addToast('שגיאה בשמירת התפריט', 'error');
         }
     };
 
-    // --- Logic 4: Booking Approval (ACTION TRIGGER) ---
+    // --- Logic 4: Booking Approval (ACTION TRIGGER -> MODAL) ---
     const approveBooking = async () => {
         const { error } = await supabase
             .from('bookings')
@@ -84,12 +83,8 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
 
         if (!error) {
             onUpdate();
-            addToast('ההזמנה אושרה! פותח וואטסאפ...', 'success');
-
-            // ACTION TRIGGER: Open WhatsApp immediately
-            const link = generateWhatsAppLink(booking, 'confirmed');
-            window.open(link, '_blank');
-
+            // Show Confirm Modal
+            setConfirmAction({ type: 'confirmed', title: 'ההזמנה אושרה בהצלחה' });
         } else {
             addToast('שגיאה באישור ההזמנה', 'error');
         }
@@ -167,46 +162,38 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
                             <h3 className="uppercase text-xs font-bold text-gray-400 tracking-wider">תקשורת עם האורח</h3>
-                            <Badge variant="secondary" className="text-[10px] px-1.5 h-4 bg-green-50 text-green-700 hover:bg-green-100">WhatsApp Engine</Badge>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 h-4 bg-green-50 text-green-700 hover:bg-green-100">Proactive</Badge>
                         </div>
 
                         <div className="grid grid-cols-1 gap-3">
-                            <a
-                                href={generateWhatsAppLink(booking, 'confirmed')}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="w-full"
+                            {/* Manual Action Buttons - Now opening Modal */}
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start text-green-700 bg-green-50 hover:bg-green-100 border-green-200"
+                                onClick={() => setConfirmAction({ type: 'confirmed', title: 'אישור הזמנה' })}
                             >
-                                <Button variant="outline" className="w-full justify-start text-green-700 bg-green-50 hover:bg-green-100 border-green-200">
-                                    <MessageCircle className="h-4 w-4 mr-2" />
-                                    שלח אישור הזמנה (ידני)
-                                </Button>
-                            </a>
+                                <MessageCircle className="h-4 w-4 mr-2" />
+                                שלח אישור הזמנה
+                            </Button>
 
-                            <a
-                                href={generateWhatsAppLink(booking, 'arrival')}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="w-full"
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start text-blue-700 bg-blue-50 hover:bg-blue-100 border-blue-200"
+                                onClick={() => setConfirmAction({ type: 'arrival', title: 'הוראות הגעה' })}
                             >
-                                <Button variant="outline" className="w-full justify-start text-blue-700 bg-blue-50 hover:bg-blue-100 border-blue-200">
-                                    <Send className="h-4 w-4 mr-2" />
-                                    שלח הוראות הגעה (ידני)
-                                </Button>
-                            </a>
+                                <Send className="h-4 w-4 mr-2" />
+                                שלח הוראות הגעה וקוד
+                            </Button>
 
                             {booking.breakfast_ordered && (
-                                <a
-                                    href={generateWhatsAppLink(booking, 'breakfast')}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="w-full"
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-start text-orange-700 bg-orange-50 hover:bg-orange-100 border-orange-200"
+                                    onClick={() => setConfirmAction({ type: 'breakfast', title: 'אישור ארוחת בוקר' })}
                                 >
-                                    <Button variant="outline" className="w-full justify-start text-orange-700 bg-orange-50 hover:bg-orange-100 border-orange-200">
-                                        <Coffee className="h-4 w-4 mr-2" />
-                                        שלח אישור ארוחת בוקר (ידני)
-                                    </Button>
-                                </a>
+                                    <Coffee className="h-4 w-4 mr-2" />
+                                    שלח אישור ארוחת בוקר
+                                </Button>
                             )}
                         </div>
                     </div>
@@ -217,7 +204,7 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                             <h3 className="font-bold text-orange-800">הזמנה זו ממתינה לאישור</h3>
                             <p className="text-sm text-orange-700">יש לוודא זמינות ביומן לפני האישור הסופי.</p>
                             <Button onClick={approveBooking} className="w-full bg-orange-600 hover:bg-orange-700 text-white">
-                                <Check className="h-4 w-4 mr-2" /> אשר הזמנה ושלח וואטסאפ
+                                <Check className="h-4 w-4 mr-2" /> אשר הזמנה
                             </Button>
                         </div>
                     )}
@@ -270,7 +257,7 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                                         className="w-full"
                                         variant={booking.breakfast_status === 'approved' ? 'outline' : 'primary'}
                                     >
-                                        {booking.breakfast_status === 'approved' ? 'עדכן ושלח וואטסאפ' : 'אשר ארוחה ושלח וואטסאפ'}
+                                        {booking.breakfast_status === 'approved' ? 'עדכן תפריט' : 'אשר ארוחה'}
                                     </Button>
                                 </div>
                             ) : (
@@ -282,6 +269,15 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                         </div>
                     </div>
                 </div>
+
+                {/* Confirm Modal */}
+                <ActionConfirmModal
+                    isOpen={!!confirmAction}
+                    onClose={() => setConfirmAction(null)}
+                    booking={booking}
+                    actionType={confirmAction?.type || null}
+                    title={confirmAction?.title}
+                />
             </div>
         </div>
     );

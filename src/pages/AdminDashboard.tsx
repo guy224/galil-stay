@@ -3,6 +3,7 @@ import { format, isSameMonth, parseISO, isAfter, differenceInDays, startOfDay } 
 import { CreditCard, Calendar, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import { BookingList } from '../components/admin/BookingList';
 import { DashboardCalendar } from '../components/admin/DashboardCalendar';
+import { DailyActions } from '../components/admin/DailyActions';
 import { supabase } from '../lib/supabase';
 import { Booking } from '../types/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -70,6 +71,9 @@ export default function AdminDashboard() {
                         </Button>
                     </div>
                 </header>
+
+                {/* Proactive Actions Section */}
+                <DailyActions bookings={bookings} />
 
                 {/* KPI Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
