@@ -50,7 +50,7 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
         }
     };
 
-    // --- Logic 3: Breakfast Approval ---
+    // --- Logic 3: Breakfast Approval (ACTION TRIGGER) ---
     const approveBreakfast = async () => {
         setLoading(true);
         const { error } = await supabase
@@ -64,13 +64,18 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
         setLoading(false);
         if (!error) {
             onUpdate();
-            addToast('ארוחת הבוקר אושרה והתפריט נשמר', 'success');
+            addToast('ארוחת הבוקר אושרה! פותח וואטסאפ...', 'success');
+
+            // ACTION TRIGGER: Open WhatsApp immediately
+            const link = generateWhatsAppLink(booking, 'breakfast');
+            window.open(link, '_blank');
+
         } else {
             addToast('שגיאה בשמירת התפריט', 'error');
         }
     };
 
-    // --- Logic 4: Booking Approval (General) ---
+    // --- Logic 4: Booking Approval (ACTION TRIGGER) ---
     const approveBooking = async () => {
         const { error } = await supabase
             .from('bookings')
@@ -79,7 +84,12 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
 
         if (!error) {
             onUpdate();
-            addToast('ההזמנה אושרה בהצלחה!', 'success');
+            addToast('ההזמנה אושרה! פותח וואטסאפ...', 'success');
+
+            // ACTION TRIGGER: Open WhatsApp immediately
+            const link = generateWhatsAppLink(booking, 'confirmed');
+            window.open(link, '_blank');
+
         } else {
             addToast('שגיאה באישור ההזמנה', 'error');
         }
@@ -169,7 +179,7 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                             >
                                 <Button variant="outline" className="w-full justify-start text-green-700 bg-green-50 hover:bg-green-100 border-green-200">
                                     <MessageCircle className="h-4 w-4 mr-2" />
-                                    שלח אישור הזמנה (וואטסאפ)
+                                    שלח אישור הזמנה (ידני)
                                 </Button>
                             </a>
 
@@ -181,7 +191,7 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                             >
                                 <Button variant="outline" className="w-full justify-start text-blue-700 bg-blue-50 hover:bg-blue-100 border-blue-200">
                                     <Send className="h-4 w-4 mr-2" />
-                                    שלח הוראות הגעה וקוד
+                                    שלח הוראות הגעה (ידני)
                                 </Button>
                             </a>
 
@@ -194,7 +204,7 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                                 >
                                     <Button variant="outline" className="w-full justify-start text-orange-700 bg-orange-50 hover:bg-orange-100 border-orange-200">
                                         <Coffee className="h-4 w-4 mr-2" />
-                                        שלח אישור ארוחת בוקר
+                                        שלח אישור ארוחת בוקר (ידני)
                                     </Button>
                                 </a>
                             )}
@@ -207,7 +217,7 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                             <h3 className="font-bold text-orange-800">הזמנה זו ממתינה לאישור</h3>
                             <p className="text-sm text-orange-700">יש לוודא זמינות ביומן לפני האישור הסופי.</p>
                             <Button onClick={approveBooking} className="w-full bg-orange-600 hover:bg-orange-700 text-white">
-                                <Check className="h-4 w-4 mr-2" /> אשר הזמנה
+                                <Check className="h-4 w-4 mr-2" /> אשר הזמנה ושלח וואטסאפ
                             </Button>
                         </div>
                     )}
@@ -260,7 +270,7 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                                         className="w-full"
                                         variant={booking.breakfast_status === 'approved' ? 'outline' : 'primary'}
                                     >
-                                        {booking.breakfast_status === 'approved' ? 'עדכן תפריט' : 'אשר ארוחה'}
+                                        {booking.breakfast_status === 'approved' ? 'עדכן ושלח וואטסאפ' : 'אשר ארוחה ושלח וואטסאפ'}
                                     </Button>
                                 </div>
                             ) : (
@@ -272,9 +282,6 @@ export function BookingModal({ booking, isOpen, onClose, onUpdate }: BookingModa
                         </div>
                     </div>
                 </div>
-
-                {/* Footer Actions - REMOVED GENERIC WHATSAPP */}
-
             </div>
         </div>
     );

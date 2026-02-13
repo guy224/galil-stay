@@ -14,8 +14,7 @@ export const generateWhatsAppLink = (booking: Booking, type: MessageType): strin
     const guestName = booking.guest_name.split(' ')[0]; // First name only
     const dates = `${format(new Date(booking.check_in), 'dd/MM')} - ${format(new Date(booking.check_out), 'dd/MM')}`;
     const unitName = booking.unit_type === 'villa' ? 'וילה בגליל' : 'צימר בין הנחלים';
-    const wazeLink = "https://waze.com/ul/hsvc4g285f"; // Generic placeholder or specific if known. Using a generic northern location for now.
-    const gateCode = booking.gate_code || "1234"; // Fallback if empty
+    const guestUrl = `${window.location.origin}/guest/${booking.id}`;
     const breakfastTime = booking.breakfast_time || "09:00";
 
     // 3. Select Template
@@ -23,15 +22,18 @@ export const generateWhatsAppLink = (booking: Booking, type: MessageType): strin
 
     switch (type) {
         case 'confirmed':
-            message = `היי ${guestName}! 👋 איזה כיף, ההזמנה שלכם ב-Galil Stay אושרה! 🎉\n🗓 תאריכים: ${dates}\n🏡 יחידה: ${unitName}\nאנחנו כבר מתחילים להכין את המקום בשבילכם. נתראה בקרוב! 🌿`;
+            message = `היי ${guestName}! 👋 ההזמנה אושרה! 🎉\n🗓 תאריכים: ${dates}\n🏡 יחידה: ${unitName}\n\nלכל הפרטים והוראות ההגעה, כנסו לאזור האישי שלכם:\n${guestUrl}`;
             break;
 
         case 'arrival':
-            message = `היי ${guestName}, מתרגשים לקראתכם מחר! 😍\nהנה הפרטים להגעה:\n📍 ניווט בוייז: ${wazeLink}\n🔑 קוד לשער: ${gateCode}\nסעו בזהירות! 🚗`;
+            // "Arrival" is now mostly covered by the Guest Portal link in 'confirmed', 
+            // but we keep this for specific day-before reminders if needed.
+            // The user asked for "Check-in Info" to include the link.
+            message = `היי ${guestName}, מחכים לראותכם מחר! 😍\n\nלניווט וקוד לשער, כנסו לקישור:\n${guestUrl}\n\nסעו בזהירות! 🚗`;
             break;
 
         case 'breakfast':
-            message = `בוקר טוב ${guestName}! ☀️ רק מעדכנים שארוחת הבוקר הגלילית שלכם רשומה לשעה ${booking.breakfast_time}. שיהיה בתיאבון! 🥐🧀`;
+            message = `היי ${guestName}, אישרנו את ארוחת הבוקר לשעה ${breakfastTime} 🍳.\nלפרטים נוספים וצפייה בתפריט:\n${guestUrl}`;
             break;
     }
 
