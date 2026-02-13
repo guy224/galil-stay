@@ -22,4 +22,10 @@ export interface Booking {
 
     // Guest Interactions
     guest_complaint?: string;
+
+    // Guest Composition
+    adults: number;
+    children: number;
+    infants: number;
+    pets: number;
 }

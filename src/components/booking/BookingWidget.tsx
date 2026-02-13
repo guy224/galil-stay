@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { addDays, format, differenceInDays, isBefore, isAfter, isWithinInterval, parseISO } from 'date-fns';
-import { ArrowLeft, CheckCircle, XCircle, Search } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Search, Users, Minus, Plus, ChevronDown } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Calendar } from '../ui/Calendar';
 import { Input } from '../ui/Input';
@@ -20,6 +20,14 @@ export function BookingWidget({ unitType, basePrice }: BookingWidgetProps) {
     const [guestName, setGuestName] = useState('');
     const [guestPhone, setGuestPhone] = useState('');
 
+    // Guest Composition State
+    const [adults, setAdults] = useState(2);
+    const [children, setChildren] = useState(0);
+    const [infants, setInfants] = useState(0);
+    const [pets, setPets] = useState(0);
+    const [isGuestMenuOpen, setIsGuestMenuOpen] = useState(false);
+    const guestMenuRef = useRef<HTMLDivElement>(null);
+
     // Availability State
     const [isChecking, setIsChecking] = useState(false);
     const [availability, setAvailability] = useState<'idle' | 'available' | 'taken'>('idle');
@@ -34,10 +42,34 @@ export function BookingWidget({ unitType, basePrice }: BookingWidgetProps) {
     const totalNights = date?.from && date?.to ? differenceInDays(date.to, date.from) : 0;
     const totalPrice = totalNights * basePrice;
 
+    // Helper: Close guest menu on click outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (guestMenuRef.current && !guestMenuRef.current.contains(event.target as Node)) {
+                setIsGuestMenuOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Helper: Guest Summary String
+    const getGuestSummary = () => {
+        const totalGuests = adults + children;
+        let summary = `${totalGuests} אורחים`;
+        if (infants > 0) summary += `, ${infants} תינוקות`;
+        if (pets > 0) summary += `, ${pets} חיות מחמד`;
+        return summary;
+    };
+
     // --- Logic: Check Availability ---
     const checkAvailability = async () => {
         if (!date?.from || !date?.to) {
             setError('נא לבחור תאריכי הגעה ועזיבה');
+            return;
+        }
+        if (adults < 1) {
+            setError('חובה לבחור לפחות מבוגר אחד');
             return;
         }
 
@@ -148,7 +180,12 @@ export function BookingWidget({ unitType, basePrice }: BookingWidgetProps) {
                 guest_name: guestName,
                 guest_phone: guestPhone,
                 total_price: totalPrice,
-                status: 'pending'
+                status: 'pending',
+                // Guest Composition
+                adults,
+                children,
+                infants,
+                pets
             });
 
         setIsSubmitting(false);
@@ -171,7 +208,7 @@ export function BookingWidget({ unitType, basePrice }: BookingWidgetProps) {
                     <div>
                         <h3 className="text-2xl font-bold text-gray-900">הבקשה נשלחה!</h3>
                         <p className="text-gray-500 mt-2">
-                            תודה {guestName}, שריינו עבורך את התאריכים.
+                            תודה {guestName}, קיבלנו את בקשתך עבור {getGuestSummary()}.
                             <br />
                             ניצור איתך קשר בקרוב לאישור סופי.
                         </p>
@@ -184,6 +221,10 @@ export function BookingWidget({ unitType, basePrice }: BookingWidgetProps) {
                             setGuestName('');
                             setGuestPhone('');
                             setAvailability('idle');
+                            setAdults(2);
+                            setChildren(0);
+                            setInfants(0);
+                            setPets(0);
                         }}
                         variant="outline"
                         className="w-full"
@@ -195,19 +236,48 @@ export function BookingWidget({ unitType, basePrice }: BookingWidgetProps) {
         );
     }
 
+    // --- Component: Counter Row ---
+    const CounterRow = ({ label, subLabel, value, onChange, min = 0 }: any) => (
+        <div className="flex items-center justify-between py-3 border-b last:border-0">
+            <div>
+                <div className="font-medium text-sm">{label}</div>
+                <div className="text-xs text-gray-500">{subLabel}</div>
+            </div>
+            <div className="flex items-center gap-3">
+                <button
+                    type="button"
+                    onClick={() => onChange(Math.max(min, value - 1))}
+                    disabled={value <= min}
+                    className="w-8 h-8 rounded-full border flex items-center justify-center text-gray-600 disabled:opacity-30 hover:border-black transition-colors"
+                >
+                    <Minus className="h-3 w-3" />
+                </button>
+                <span className="w-4 text-center font-medium text-sm">{value}</span>
+                <button
+                    type="button"
+                    onClick={() => onChange(value + 1)}
+                    className="w-8 h-8 rounded-full border flex items-center justify-center text-gray-600 hover:border-black transition-colors"
+                >
+                    <Plus className="h-3 w-3" />
+                </button>
+            </div>
+        </div>
+    );
+
     // --- Render: Main Widget ---
     return (
-        <Card className="w-full max-w-md mx-auto bg-white/90 backdrop-blur shadow-xl border-primary/20 overflow-hidden transition-all duration-300">
+        <Card className="w-full max-w-md mx-auto bg-white/90 backdrop-blur shadow-xl border-primary/20 overflow-visible transition-all duration-300">
             <CardHeader className="bg-primary/5 pb-4">
                 <CardTitle className="text-center text-primary flex items-center justify-center gap-2">
                     {step === 'results' && availability === 'available' ? 'השלמת הזמנה' : 'בדיקת זמינות'}
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-6 relative">
 
                 {/* Step 1: Search */}
                 {step === 'search' && (
                     <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                        {/* Date Picker */}
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-700">מתי מגיעים?</label>
                             <div className="flex justify-center border rounded-xl p-2 bg-white shadow-sm">
@@ -221,6 +291,61 @@ export function BookingWidget({ unitType, basePrice }: BookingWidgetProps) {
                             </div>
                         </div>
 
+                        {/* Guest Selector */}
+                        <div className="space-y-2 relative" ref={guestMenuRef}>
+                            <label className="text-sm font-medium text-gray-700">מי מגיע?</label>
+                            <button
+                                type="button"
+                                onClick={() => setIsGuestMenuOpen(!isGuestMenuOpen)}
+                                className="w-full flex items-center justify-between h-12 px-4 border rounded-xl bg-white shadow-sm hover:border-primary/50 transition-colors"
+                            >
+                                <div className="flex items-center gap-2 text-gray-700">
+                                    <Users className="h-4 w-4 text-primary" />
+                                    <span className="text-sm font-medium">{getGuestSummary()}</span>
+                                </div>
+                                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isGuestMenuOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {isGuestMenuOpen && (
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                    <CounterRow
+                                        label="מבוגרים"
+                                        subLabel="מגיל 13 ומעלה"
+                                        value={adults}
+                                        onChange={setAdults}
+                                        min={1}
+                                    />
+                                    <CounterRow
+                                        label="ילדים"
+                                        subLabel="גילאים 2-12"
+                                        value={children}
+                                        onChange={setChildren}
+                                    />
+                                    <CounterRow
+                                        label="תינוקות"
+                                        subLabel="מתחת לגיל 2"
+                                        value={infants}
+                                        onChange={setInfants}
+                                    />
+                                    <CounterRow
+                                        label="חיות מחמד"
+                                        subLabel="כלבים וחתולים"
+                                        value={pets}
+                                        onChange={setPets}
+                                    />
+                                    <div className="pt-2 text-left">
+                                        <button
+                                            onClick={() => setIsGuestMenuOpen(false)}
+                                            className="text-sm font-bold text-primary hover:underline"
+                                        >
+                                            סגור
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         {error && (
                             <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2">
                                 <XCircle className="h-4 w-4" /> {error}
@@ -232,7 +357,7 @@ export function BookingWidget({ unitType, basePrice }: BookingWidgetProps) {
                             className="w-full h-12 text-lg"
                             size="lg"
                             isLoading={isChecking}
-                            disabled={!date?.from || !date?.to}
+                            disabled={!date?.from || !date?.to || adults < 1}
                         >
                             <Search className="ml-2 h-5 w-5" />
                             בדוק זמינות
@@ -249,6 +374,8 @@ export function BookingWidget({ unitType, basePrice }: BookingWidgetProps) {
                                 <p className="font-bold text-green-800">התאריכים פנויים!</p>
                                 <p className="text-xs text-green-700">
                                     {totalNights} לילות • {totalPrice} ₪ סה"כ
+                                    <br />
+                                    עבור {getGuestSummary()}
                                 </p>
                             </div>
                         </div>
