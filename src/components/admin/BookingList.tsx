@@ -10,8 +10,8 @@ import { Button } from '../../components/ui/Button';
 import { BookingModal } from './BookingModal';
 
 interface BookingListProps {
-    initialBookings?: Booking[]; // Optional, can still fetch if needed, but prefers props
-    onUpdate?: () => void;
+    initialBookings?: Booking[];
+    onUpdate?: () => void | Promise<void>;
 }
 
 export function BookingList({ initialBookings, onUpdate }: BookingListProps) {
@@ -54,8 +54,7 @@ export function BookingList({ initialBookings, onUpdate }: BookingListProps) {
             console.error('Error updating status:', error);
             alert('שגיאה בעדכון הסטטוס');
         } else {
-            // Optimistic update or refetch
-            if (onUpdate) onUpdate();
+            if (onUpdate) await onUpdate();
             else fetchBookings();
         }
         setProcessingId(null);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { format, isSameMonth, parseISO, isAfter, differenceInDays, startOfDay } from 'date-fns';
-import { Users, CreditCard, Calendar, Clock, TrendingUp, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { CreditCard, Calendar, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import { BookingList } from '../components/admin/BookingList';
 import { supabase } from '../lib/supabase';
 import { Booking } from '../types/supabase';
@@ -9,11 +9,9 @@ import { Button } from '../components/ui/Button';
 
 export default function AdminDashboard() {
     const [bookings, setBookings] = useState<Booking[]>([]);
-    const [loading, setLoading] = useState(true);
 
     // Fetch Bookings
     const fetchBookings = async () => {
-        setLoading(true);
         const { data, error } = await supabase
             .from('bookings')
             .select('*')
@@ -21,7 +19,6 @@ export default function AdminDashboard() {
 
         if (error) console.error('Error fetching bookings:', error);
         else setBookings(data as Booking[]);
-        setLoading(false);
     };
 
     useEffect(() => {
