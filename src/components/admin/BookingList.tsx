@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { format, differenceInDays, parseISO } from 'date-fns';
-import { Loader2, Search, Coffee, Sparkles, Inbox, MoreVertical, Check, X, User, Baby, Cat } from 'lucide-react';
+import { format, differenceInDays, parseISO, isWithinInterval, isSameDay } from 'date-fns';
+import { Loader2, Search, Coffee, Sparkles, Inbox, MoreVertical, Check, X, User, Baby, Cat, CalendarOff } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Booking } from '../../types/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
@@ -12,9 +12,11 @@ import { BookingModal } from './BookingModal';
 interface BookingListProps {
     initialBookings?: Booking[];
     onUpdate?: () => void | Promise<void>;
+    filterDate?: Date | null;
+    onClearFilter?: () => void;
 }
 
-export function BookingList({ initialBookings, onUpdate }: BookingListProps) {
+export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilter }: BookingListProps) {
     const [bookings, setBookings] = useState<Booking[]>(initialBookings || []);
     const [loading, setLoading] = useState(!initialBookings);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -60,25 +62,50 @@ export function BookingList({ initialBookings, onUpdate }: BookingListProps) {
         setProcessingId(null);
     };
 
-    const filteredBookings = bookings.filter(b =>
-        b.guest_name.includes(search) ||
-        b.guest_phone.includes(search)
-    );
+    const filteredBookings = bookings.filter(b => {
+        const matchesSearch = b.guest_name.includes(search) || b.guest_phone.includes(search);
+
+        let matchesDate = true;
+        if (filterDate) {
+            // Check if filterDate is within booking range
+            const start = parseISO(b.check_in);
+            const end = parseISO(b.check_out);
+            matchesDate = isWithinInterval(filterDate, { start, end });
+        }
+
+        return matchesSearch && matchesDate;
+    });
 
     return (
-        <Card className="border-none shadow-sm bg-white overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between border-b bg-gray-50/50 px-6 py-4">
-                <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg">הזמנות אחרונות</CardTitle>
-                    <Badge variant="secondary" className="rounded-full px-2">
-                        {filteredBookings.length}
-                    </Badge>
+        <Card className="border-none shadow-sm bg-white overflow-hidden flex flex-col h-full">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b bg-gray-50/50 px-6 py-4 gap-4">
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg">הזמנות אחרונות</CardTitle>
+                        <Badge variant="secondary" className="rounded-full px-2">
+                            {filteredBookings.length}
+                        </Badge>
+                    </div>
+                    {filterDate && (
+                        <div className="flex items-center gap-2 text-sm text-primary animate-in fade-in slide-in-from-top-1">
+                            <span>מציג הזמנות ל- {format(filterDate, 'dd/MM/yyyy')}</span>
+                            {onClearFilter && (
+                                <button
+                                    onClick={onClearFilter}
+                                    className="text-xs text-gray-400 hover:text-red-500 underline transition-colors"
+                                >
+                                    נקה סינון
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
-                <div className="relative w-64">
+
+                <div className="relative w-full sm:w-64">
                     <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="חיפוש אורח..."
-                        className="pr-9 h-9 bg-white"
+                        className="pr-9 h-9 bg-white w-full"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -107,7 +134,15 @@ export function BookingList({ initialBookings, onUpdate }: BookingListProps) {
                         ) : filteredBookings.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                                    לא נמצאו הזמנות
+                                    {filterDate ? (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <CalendarOff className="h-8 w-8 text-gray-300" />
+                                            <span>אין הזמנות בתאריך זה</span>
+                                            <Button variant="outline" size="sm" onClick={onClearFilter}>נקה תאריך</Button>
+                                        </div>
+                                    ) : (
+                                        'לא נמצאו הזמנות'
+                                    )}
                                 </td>
                             </tr>
                         ) : (

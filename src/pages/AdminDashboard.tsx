@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { format, isSameMonth, parseISO, isAfter, differenceInDays, startOfDay } from 'date-fns';
 import { CreditCard, Calendar, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import { BookingList } from '../components/admin/BookingList';
+import { DashboardCalendar } from '../components/admin/DashboardCalendar';
 import { supabase } from '../lib/supabase';
 import { Booking } from '../types/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -9,6 +10,7 @@ import { Button } from '../components/ui/Button';
 
 export default function AdminDashboard() {
     const [bookings, setBookings] = useState<Booking[]>([]);
+    const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
     // Fetch Bookings
     const fetchBookings = async () => {
@@ -132,21 +134,22 @@ export default function AdminDashboard() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                     {/* Recent Bookings Table (Takes up 2 columns) */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <BookingList initialBookings={bookings} onUpdate={fetchBookings} />
+                    <div className="lg:col-span-2 min-h-[500px]">
+                        <BookingList
+                            initialBookings={bookings}
+                            onUpdate={fetchBookings}
+                            filterDate={selectedDate}
+                            onClearFilter={() => setSelectedDate(null)}
+                        />
                     </div>
 
-                    {/* Calendar Placeholder (Takes up 1 column for now) */}
-                    <div className="space-y-6">
-                        <Card className="h-full min-h-[400px] border-dashed border-2 bg-gray-50/50 flex items-center justify-center">
-                            <div className="text-center p-6">
-                                <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                                <h3 className="text-lg font-medium text-gray-900">לוח שנה (בקרוב)</h3>
-                                <p className="text-sm text-gray-500 mt-2">
-                                    כאן יוצג לוח השנה המלא עם אפשרות לגרירה ושינוי תאריכים.
-                                </p>
-                            </div>
-                        </Card>
+                    {/* Calendar Widget (Takes up 1 column) */}
+                    <div className="h-full min-h-[400px]">
+                        <DashboardCalendar
+                            bookings={bookings}
+                            selectedDate={selectedDate}
+                            onSelectDate={setSelectedDate}
+                        />
                     </div>
                 </div>
             </div>
