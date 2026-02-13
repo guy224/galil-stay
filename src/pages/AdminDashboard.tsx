@@ -4,6 +4,9 @@ import { CreditCard, Calendar, Clock, TrendingUp, AlertCircle } from 'lucide-rea
 import { BookingList } from '../components/admin/BookingList';
 import { DashboardCalendar } from '../components/admin/DashboardCalendar';
 import { DailyActions } from '../components/admin/DailyActions';
+import { NewBookingModal } from '../components/admin/NewBookingModal';
+import { ActionConfirmModal } from '../components/admin/ActionConfirmModal';
+import { MessageType } from '../utils/whatsappUtils';
 import { supabase } from '../lib/supabase';
 import { Booking } from '../types/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
@@ -12,6 +15,10 @@ import { Button } from '../components/ui/Button';
 export default function AdminDashboard() {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+    // UI State
+    const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
+    const [confirmAction, setConfirmAction] = useState<{ booking: Booking, type: MessageType, title: string } | null>(null);
 
     // Fetch Bookings
     const fetchBookings = async () => {
@@ -27,6 +34,16 @@ export default function AdminDashboard() {
     useEffect(() => {
         fetchBookings();
     }, []);
+
+    const handleNewBookingSuccess = (newBooking: Booking) => {
+        fetchBookings();
+        // AUTO TRIGGER: Proactive WhatsApp prompt
+        setConfirmAction({
+            booking: newBooking,
+            type: 'confirmed',
+            title: 'ההזמנה נוצרה בהצלחה!'
+        });
+    };
 
     // --- KPI Calculations ---
     const now = new Date();
@@ -66,7 +83,7 @@ export default function AdminDashboard() {
                         <Button variant="outline" onClick={fetchBookings}>
                             רענון נתונים
                         </Button>
-                        <Button>
+                        <Button onClick={() => setIsNewBookingModalOpen(true)}>
                             + הזמנה חדשה
                         </Button>
                     </div>
@@ -156,6 +173,21 @@ export default function AdminDashboard() {
                         />
                     </div>
                 </div>
+
+                {/* MODALS */}
+                <NewBookingModal
+                    isOpen={isNewBookingModalOpen}
+                    onClose={() => setIsNewBookingModalOpen(false)}
+                    onSuccess={handleNewBookingSuccess}
+                />
+
+                <ActionConfirmModal
+                    isOpen={!!confirmAction}
+                    onClose={() => setConfirmAction(null)}
+                    booking={confirmAction?.booking || null}
+                    actionType={confirmAction?.type || null}
+                    title={confirmAction?.title}
+                />
             </div>
         </div>
     );
