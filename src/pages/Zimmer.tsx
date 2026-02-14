@@ -55,7 +55,7 @@ export default function ZimmerPage() {
                     {/* Booking Column */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-8">
-                            <BookingWidget unitType="zimmer" basePrice={1200} />
+                            <BookingWidget preselectedUnitType="zimmer" />
                         </div>
                     </div>
 

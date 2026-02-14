@@ -56,7 +56,7 @@ export default function VillaPage() {
                     {/* Booking Column */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-8">
-                            <BookingWidget unitType="villa" basePrice={2500} />
+                            <BookingWidget preselectedUnitType="villa" />
                         </div>
                     </div>
 
