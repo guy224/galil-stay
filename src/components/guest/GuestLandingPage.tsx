@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { isAfter, isBefore, startOfDay } from 'date-fns';
 import {
     MapPin, Wifi, Key, BookOpen,
-    MessageCircle,
     Lock, Navigation,
-    ChevronLeft, Star
+    ChevronLeft, Star, Coffee, Utensils, Trees,
+    Flame, Snowflake, Smartphone, X
 } from 'lucide-react';
 import type { Booking } from '../../types/supabase';
 import { useToast } from '../ui/Toast';
@@ -14,10 +14,72 @@ interface GuestLandingPageProps {
     booking: Booking;
 }
 
+// REAL HaGoshrim Recommendations
+const RECOMMENDATIONS = [
+    {
+        id: 'coffee',
+        title: 'קפה פילוסוף',
+        description: 'עגלת קפה קסומה בתוך הקיבוץ, מול נוף ירוק ואווירה של חופש. הקפה הכי טוב לפתוח איתו את הבוקר.',
+        image: 'https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=2070&auto=format&fit=crop',
+        locationLink: 'https://waze.com/ul/hsvc7u7f8z',
+        tag: 'בית קפה'
+    },
+    {
+        id: 'nature',
+        title: 'עמק הנהר הנעלם',
+        description: 'הסוד של הגושרים. מסלול הליכה קסום ומוצל בתוך הקיבוץ (נחל קורן), עם גשרים קטנים ופינות חמד.',
+        image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=2071&auto=format&fit=crop',
+        locationLink: 'https://waze.com/ul/hsvc7u7k3e',
+        tag: 'טבע'
+    },
+    {
+        id: 'food',
+        title: 'מסעדת פוקצ\'ה',
+        description: 'מוסד קולינרי בגליל. אוכל איטלקי-ים תיכוני מעולה במתחם גן הצפון. חובה להזמין מקום מראש!',
+        image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=2070&auto=format&fit=crop',
+        locationLink: 'https://waze.com/ul/hsvc7uk8u4',
+        tag: 'מסעדה'
+    }
+];
+
+// REAL House Guide
+const HOUSE_GUIDE = [
+    {
+        title: 'אינטרנט וטלוויזיה',
+        icon: Wifi,
+        iconColor: 'text-blue-500',
+        content: 'רשת ה-WiFi היא "Gali_Guest". הסיסמה מועתקת אוטומטית בכפתור הראשי. בטלוויזיה יש נטפליקס פתוח.'
+    },
+    {
+        title: 'מטבח וקפה',
+        icon: Coffee,
+        iconColor: 'text-amber-600',
+        content: 'מכונת הנספרסו לרשותכם (קפסולות במגירה). במקרר מחכים לכם מים קרים וחלב.'
+    },
+    {
+        title: 'ג\'קוזי ומים חמים',
+        icon: Flame,
+        iconColor: 'text-red-500',
+        content: 'הג\'קוזי מכוון ל-38 מעלות קבוע. להפעלת הזרמים לחצו על כפתור הבועות. המים במקלחת על גז (חמים תמיד).'
+    },
+    {
+        title: 'מיזוג אוויר',
+        icon: Snowflake,
+        iconColor: 'text-cyan-500',
+        content: 'שלטי המזגן על הקיר. מומלץ: 24 מעלות בקיץ, 28 בחורף.'
+    },
+    {
+        title: 'חירום ורפואה',
+        icon: Smartphone,
+        iconColor: 'text-green-500',
+        content: 'תיק עזרה ראשונה בארון אמבטיה. מרפאה וסופרמרקט נמצאים בתוך הקיבוץ.'
+    }
+];
+
 export default function GuestLandingPage({ booking }: GuestLandingPageProps) {
     const { addToast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('home');
+    const [showGuideModal, setShowGuideModal] = useState(false);
     const [stayPhase, setStayPhase] = useState<'FUTURE' | 'PRESENT' | 'PAST'>('FUTURE');
 
     // Derived Data
@@ -66,17 +128,22 @@ export default function GuestLandingPage({ booking }: GuestLandingPageProps) {
     };
 
     const handleCopyWifi = () => {
-        navigator.clipboard.writeText('GalilFreeWifi2025');
+        navigator.clipboard.writeText('Gali_Guest');
         addToast('הסיסמה הועתקה ללוח!', 'success');
     };
 
+    // REAL HaGoshrim Waze Link
     const handleWaze = () => {
-        window.open('https://waze.com/ul/hsv8k42qq1', '_blank'); // Placeholder coords
+        window.open('https://waze.com/ul/hsvc7u7f8z', '_blank');
     };
 
     const handleWhatsApp = (text: string) => {
         const link = `https://wa.me/972501234567?text=${encodeURIComponent(text)}`;
         window.open(link, '_blank');
+    };
+
+    const handleRecommendationClick = (locationLink: string) => {
+        window.open(locationLink, '_blank');
     };
 
     if (isLoading) {
@@ -145,7 +212,7 @@ export default function GuestLandingPage({ booking }: GuestLandingPageProps) {
                     <ControlCard
                         icon={BookOpen}
                         label="מדריך הבית"
-                        onClick={() => addToast('המדריך יעלה לאוויר בקרוב!', 'info')}
+                        onClick={() => setShowGuideModal(true)}
                         delay={0.4}
                     />
                 </motion.div>
@@ -178,28 +245,23 @@ export default function GuestLandingPage({ booking }: GuestLandingPageProps) {
                     </div>
                 </motion.div>
 
-                {/* Recommendations Carousel */}
+                {/* REAL Recommendations Carousel */}
                 <motion.div variants={itemVariants} className="mb-4">
                     <h3 className="text-white/90 font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
                         <MapPin className="h-4 w-4 text-green-400" />
-                        ההמלצות שלנו
+                        ההמלצות שלנו בגושרים
                     </h3>
                     <div className="flex overflow-x-auto pb-4 gap-4 -mx-6 px-6 no-scrollbar snap-x">
-                        <RecommendationCard
-                            title="קפה של בוקר"
-                            image="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=2071&auto=format&fit=crop"
-                            tag="בית קפה"
-                        />
-                        <RecommendationCard
-                            title="המעיין הסודי"
-                            image="https://images.unsplash.com/photo-1533228876829-65c94e7b5025?q=80&w=2070&auto=format&fit=crop"
-                            tag="טבע"
-                        />
-                        <RecommendationCard
-                            title="רוטנברג"
-                            image="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop"
-                            tag="מסעדה"
-                        />
+                        {RECOMMENDATIONS.map((rec) => (
+                            <RecommendationCard
+                                key={rec.id}
+                                title={rec.title}
+                                image={rec.image}
+                                tag={rec.tag}
+                                description={rec.description}
+                                onClick={() => handleRecommendationClick(rec.locationLink)}
+                            />
+                        ))}
                     </div>
                 </motion.div>
 
@@ -207,12 +269,19 @@ export default function GuestLandingPage({ booking }: GuestLandingPageProps) {
                     © Galil Stay Experience
                 </div>
             </motion.div>
+
+            {/* House Guide Modal */}
+            <HouseGuideModal
+                isOpen={showGuideModal}
+                onClose={() => setShowGuideModal(false)}
+            />
         </div>
     );
 }
 
 // --- Sub-Components ---
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ControlCard({ icon: Icon, label, onClick, delay }: any) {
     return (
         <motion.button
@@ -281,6 +350,7 @@ function DoorCodeCard({ code, isLocked, delay }: { code: string, isLocked: boole
     );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function WhatsAppButton({ label, sub, emoji, onClick }: any) {
     return (
         <motion.button
@@ -303,20 +373,100 @@ function WhatsAppButton({ label, sub, emoji, onClick }: any) {
     );
 }
 
-function RecommendationCard({ title, image, tag }: any) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function RecommendationCard({ title, image, tag, description, onClick }: any) {
     return (
-        <motion.div
+        <motion.button
             whileHover={{ scale: 1.05 }}
-            className="min-w-[160px] h-[200px] rounded-2xl overflow-hidden relative shadow-lg snap-center"
+            whileTap={{ scale: 0.98 }}
+            onClick={onClick}
+            className="min-w-[280px] h-[240px] rounded-2xl overflow-hidden relative shadow-lg snap-center group cursor-pointer"
         >
             <img src={image} alt={title} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-            <div className="absolute bottom-3 right-3 text-white">
-                <span className="text-[10px] bg-white/20 backdrop-blur-md px-2 py-0.5 rounded text-white font-medium border border-white/20 mb-1 inline-block">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent group-hover:from-black/95" />
+            <div className="absolute bottom-0 right-0 left-0 p-4 text-white">
+                <span className="text-[10px] bg-white/20 backdrop-blur-md px-2 py-0.5 rounded text-white font-medium border border-white/20 mb-2 inline-block">
                     {tag}
                 </span>
-                <div className="font-bold text-lg leading-tight">{title}</div>
+                <div className="font-bold text-xl leading-tight mb-1">{title}</div>
+                <div className="text-xs text-white/80 leading-relaxed line-clamp-2">{description}</div>
+                <div className="mt-2 text-xs text-white/60 flex items-center gap-1">
+                    <Navigation className="w-3 h-3" />
+                    <span>לחץ לניווט בווייז</span>
+                </div>
             </div>
+        </motion.button>
+    );
+}
+
+function HouseGuideModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+    if (!isOpen) return null;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <motion.div
+                initial={{ y: 100, opacity: 0, scale: 0.9 }}
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                exit={{ y: 100, opacity: 0, scale: 0.9 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto border border-white/20"
+                dir="rtl"
+            >
+                {/* Header */}
+                <div className="sticky top-0 bg-gradient-to-b from-white/95 to-white/80 backdrop-blur-xl p-6 border-b border-gray-200/50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 rounded-xl">
+                            <BookOpen className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-800">מדריך הבית</h2>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                        <X className="w-6 h-6 text-gray-500" />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 space-y-4">
+                    {HOUSE_GUIDE.map((item, index) => (
+                        <motion.div
+                            key={item.title}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="bg-gradient-to-br from-gray-50 to-white p-5 rounded-2xl border border-gray-200/60 shadow-sm hover:shadow-md transition-shadow"
+                        >
+                            <div className="flex items-start gap-4">
+                                <div className={`p-3 rounded-xl bg-white shadow-sm ${item.iconColor}`}>
+                                    <item.icon className="w-6 h-6" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-lg text-slate-800 mb-2">{item.title}</h3>
+                                    <p className="text-sm text-slate-600 leading-relaxed">{item.content}</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+
+                {/* Footer */}
+                <div className="sticky bottom-0 bg-gradient-to-t from-white/95 to-white/80 backdrop-blur-xl p-6 border-t border-gray-200/50">
+                    <button
+                        onClick={onClose}
+                        className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+                    >
+                        סגור
+                    </button>
+                </div>
+            </motion.div>
         </motion.div>
     );
 }
