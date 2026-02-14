@@ -34,40 +34,52 @@ export default function UnitSettings() {
     });
 
     // Fetch Data
+    // Fetch Data
     const fetchData = async () => {
         setLoading(true);
+        console.log('Fetching settings for:', activeTab);
 
-        // 1. Get Unit
-        const { data: uData, error: uError } = await supabase
-            .from('units')
-            .select('*')
-            .eq('id', activeTab)
-            .single();
+        try {
+            // 1. Get Unit
+            const { data: uData, error: uError } = await supabase
+                .from('units')
+                .select('*')
+                .eq('id', activeTab)
+                .single();
 
-        if (uError) {
-            console.error('Error fetching unit:', uError);
-            // If error is "Row not found", we might need to insert it initially? 
-            // For now assuming DB has it seeded.
-        } else if (uData) {
-            setUnit(uData as Unit);
-            setFormData({
-                base_price_weekday: uData.base_price_weekday,
-                base_price_weekend: uData.base_price_weekend,
-                default_min_nights: uData.default_min_nights
-            });
+            if (uError) {
+                console.error('Error fetching unit:', uError);
+            } else if (uData) {
+                console.log('Fetched unit data:', uData);
+                setUnit(uData as Unit);
+                setFormData({
+                    base_price_weekday: uData.base_price_weekday,
+                    base_price_weekend: uData.base_price_weekend,
+                    default_min_nights: uData.default_min_nights
+                });
+            } else {
+                console.warn('No unit found for ID:', activeTab);
+            }
+
+            // 2. Get Seasonal Prices
+            const { data: sData, error: sError } = await supabase
+                .from('seasonal_prices')
+                .select('*')
+                .eq('unit_id', activeTab)
+                .order('start_date', { ascending: true });
+
+            if (sError) {
+                console.error('Error fetching seasonal:', sError);
+            } else {
+                setSeasonalPrices((sData || []) as SeasonalPrice[]);
+            }
+
+        } catch (err) {
+            console.error('Unexpected error in fetchData:', err);
+            addToast('שגיאה בטעינת הנתונים', 'error');
+        } finally {
+            setLoading(false);
         }
-
-        // 2. Get Seasonal Prices
-        const { data: sData, error: sError } = await supabase
-            .from('seasonal_prices')
-            .select('*')
-            .eq('unit_id', activeTab)
-            .order('start_date', { ascending: true });
-
-        if (sError) console.error('Error fetching seasonal:', sError);
-        else setSeasonalPrices((sData || []) as SeasonalPrice[]);
-
-        setLoading(false);
     };
 
     useEffect(() => {
@@ -77,20 +89,36 @@ export default function UnitSettings() {
     const handleSaveGeneral = async () => {
         if (!unit) return;
 
-        const { error } = await supabase
-            .from('units')
-            .update({
-                base_price_weekday: formData.base_price_weekday,
-                base_price_weekend: formData.base_price_weekend,
-                default_min_nights: formData.default_min_nights
-            })
-            .eq('id', activeTab);
+        console.log('Saving settings for:', activeTab, 'Data:', formData);
 
-        if (error) {
-            addToast('שגיאה בשמירת השינויים', 'error');
-        } else {
+        try {
+            const { error, data } = await supabase
+                .from('units')
+                .update({
+                    base_price_weekday: formData.base_price_weekday,
+                    base_price_weekend: formData.base_price_weekend,
+                    default_min_nights: formData.default_min_nights
+                })
+                .eq('id', activeTab)
+                .select();
+
+            if (error) throw error;
+
+            console.log('Save success:', data);
+
+            if (!data || data.length === 0) {
+                console.warn('Update returned no rows. ID mismatch?');
+                alert('לא נמצא דף יחידה לעדכון (ID Mismatch)');
+                return;
+            }
+
             addToast('ההגדרות עודכנו בהצלחה', 'success');
             fetchData();
+
+        } catch (err: any) {
+            console.error('Save Error:', err);
+            alert(`שגיאה בשמירת השינויים: ${err.message || 'Unknown error'}`);
+            addToast('שגיאה בשמירה', 'error');
         }
     };
 
