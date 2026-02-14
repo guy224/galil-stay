@@ -7,6 +7,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { GateCodeCard } from '../components/guest/GateCodeCard';
 import { BreakfastOrder } from '../components/guest/BreakfastOrder';
 import { QuickActions } from '../components/guest/QuickActions';
+import ZimmerGuestPage from './guest/ZimmerGuestPage';
 
 export default function GuestPortal() {
     const { id } = useParams<{ id: string }>();
@@ -56,6 +57,12 @@ export default function GuestPortal() {
         );
     }
 
+    // --- NEW: Zimmer Guest Guide Logic ---
+    if (booking.unit_type === 'zimmer') {
+        return <ZimmerGuestPage booking={booking} />;
+    }
+
+    // --- Original Logic (for Villa / Fallback) ---
     // Calculate days until vacation
     const today = new Date();
     const checkIn = parseISO(booking.check_in);
