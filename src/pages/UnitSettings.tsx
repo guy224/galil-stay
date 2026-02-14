@@ -95,11 +95,11 @@ export default function UnitSettings() {
             const { error, data } = await supabase
                 .from('units')
                 .update({
-                    base_price_weekday: formData.base_price_weekday,
-                    base_price_weekend: formData.base_price_weekend,
-                    default_min_nights: formData.default_min_nights
+                    base_price_weekday: Number(formData.base_price_weekday),
+                    base_price_weekend: Number(formData.base_price_weekend),
+                    default_min_nights: Number(formData.default_min_nights)
                 })
-                .eq('id', activeTab)
+                .eq('id', unit.id)
                 .select();
 
             if (error) throw error;
