@@ -54,6 +54,8 @@ function Counter({ label, subLabel, value, onChange, min = 0, max }: { label: st
 export function BookingWidget({ preselectedUnitType }: BookingWidgetProps) {
     // Stage Management
     const [step, setStep] = useState<'search' | 'summary' | 'form'>('search');
+    const [isCalculating, setIsCalculating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // State: Unit Selection
     const [unitType, setUnitType] = useState<'villa' | 'zimmer'>(preselectedUnitType || 'villa');
@@ -161,9 +163,45 @@ export function BookingWidget({ preselectedUnitType }: BookingWidgetProps) {
     }, [dateRange, unitRules, seasonalPrices, existingBookings, guestCounts.pets]);
 
     // Handlers
-    const handleCheckAvailability = () => {
-        if (calculation && !calculation.error) {
+    const handleCheckAvailability = async () => {
+        console.log('Checking availability for:', dateRange);
+        setError(null);
+        setIsCalculating(true);
+
+        try {
+            // 1. Validate Dates
+            if (!dateRange?.from || !dateRange?.to) {
+                throw new Error('נא לבחור תאריכי צ\'ק-אין וצ\'ק-אאוט');
+            }
+
+            if (isBefore(dateRange.to, dateRange.from)) {
+                throw new Error('תאריך הצ\'ק-אאוט חייב להיות אחרי תאריך הצ\'ק-אין');
+            }
+
+            // 2. Validate availability/rules from calculation
+            // We simulate a short delay to show the user something is happening (UX)
+            await new Promise(resolve => setTimeout(resolve, 600));
+
+            if (!calculation) {
+                throw new Error('שגיאה בחישוב המחיר. נא לנסות שוב.');
+            }
+
+            if (calculation.error === 'dates_blocked') {
+                throw new Error('חלק מהתאריכים שבחרתם תפוסים. נא לבחור תאריכים אחרים.');
+            }
+
+            if (calculation.error === 'min_nights') {
+                throw new Error(`מינימום ${calculation.minNights} לילות להזמנה בתאריכים אלו.`);
+            }
+
+            // 3. Success -> Next Step
             setStep('summary');
+
+        } catch (err: any) {
+            console.error('Check Availability Error:', err);
+            setError(err.message || 'אירעה שגיאה בבדיקת הזמינות');
+        } finally {
+            setIsCalculating(false);
         }
     };
 
@@ -291,24 +329,34 @@ export function BookingWidget({ preselectedUnitType }: BookingWidgetProps) {
                             )}
                         </div>
 
+                        {/* Explicit Error Message */}
+                        {error && (
+                            <div className="mb-3 p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center gap-2 animate-in slide-in-from-top-1 border border-red-100">
+                                <AlertCircle className="h-4 w-4 shrink-0" />
+                                {error}
+                            </div>
+                        )}
+
                         {/* Button */}
                         <Button
                             className={`w-full h-12 text-lg font-bold shadow-lg transition-all rounded-xl ${gradientClass} text-white`}
                             onClick={handleCheckAvailability}
-                            disabled={isLoadingData || calculation?.error === 'dates_blocked' || calculation?.error === 'min_nights'}
+                            disabled={isLoadingData || isCalculating}
                         >
-                            {isLoadingData ? <Loader2 className="h-5 w-5 animate-spin" /> : calculation?.error ? 'לא ניתן להזמין' : 'בדוק זמינות'}
+                            {isLoadingData || isCalculating ? (
+                                <div className="flex items-center gap-2 justify-center">
+                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                    <span>בודק זמינות...</span>
+                                </div>
+                            ) : (
+                                'בדוק זמינות'
+                            )}
                         </Button>
 
-                        {/* Errors */}
-                        {calculation?.error === 'dates_blocked' && (
-                            <div className="mt-3 p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-center gap-2 animate-in slide-in-from-top-1">
-                                <AlertCircle className="h-4 w-4 shrink-0" /> תאריכים אלו תפוסים.
-                            </div>
-                        )}
-                        {calculation?.error === 'min_nights' && (
-                            <div className="mt-3 p-3 bg-orange-50 text-orange-700 text-sm rounded-lg flex items-center gap-2 animate-in slide-in-from-top-1">
-                                <AlertCircle className="h-4 w-4 shrink-0" /> מינימום {calculation.minNights} לילות.
+                        {/* Calculation Warnings (Non-blocking visual cues) */}
+                        {calculation?.error === 'dates_blocked' && !error && (
+                            <div className="mt-3 text-red-500 text-xs text-center">
+                                * תאריכים תפוסים
                             </div>
                         )}
                     </div>
