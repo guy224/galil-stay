@@ -37,54 +37,63 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
         setLoading(true);
 
-        const { data: bookingsData, error } = await supabase
-            .from('bookings')
-            .select('*')
-            .order('created_at', { ascending: false });
+        try {
+            const { data: bookingsData, error } = await supabase
+                .from('bookings')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-        if (error) {
-            console.error('Error fetching dashboard data:', error);
+            if (error) {
+                console.error('Error fetching dashboard data:', error);
+                setLoading(false);
+                return;
+            }
+
+            const allBookings = bookingsData as Booking[];
+            setBookings(allBookings);
+            calculateStats(allBookings);
+        } catch (e) {
+            console.error('Unexpected error fetching data:', e);
+        } finally {
             setLoading(false);
-            return;
         }
-
-        const allBookings = bookingsData as Booking[];
-        setBookings(allBookings);
-        calculateStats(allBookings);
-        setLoading(false);
     };
 
     const calculateStats = (data: Booking[]) => {
-        const now = new Date();
-        const currentMonthBookings = data.filter(b =>
-            b.check_in && isSameMonth(parseISO(b.check_in), now) && b.status === 'approved'
-        );
+        try {
+            const now = new Date();
+            const currentMonthBookings = data.filter(b =>
+                b.check_in && isSameMonth(parseISO(b.check_in), now) && b.status === 'approved'
+            );
 
-        const monthlyRevenue = currentMonthBookings.reduce((sum, b) => sum + (b.total_price || 0), 0);
+            const monthlyRevenue = currentMonthBookings.reduce((sum, b) => sum + (b.total_price || 0), 0);
 
-        const pending = data.filter(b => b.status === 'pending').length;
+            const pending = data.filter(b => b.status === 'pending').length;
 
-        // Find next check-in
-        const futureBookings = data
-            .filter(b => b.status === 'approved' && b.check_in && isAfter(parseISO(b.check_in), startOfDay(now)))
-            .sort((a, b) => new Date(a.check_in).getTime() - new Date(b.check_in).getTime());
+            // Find next check-in
+            const futureBookings = data
+                .filter(b => b.status === 'approved' && b.check_in && isAfter(parseISO(b.check_in), startOfDay(now)))
+                .sort((a, b) => new Date(a.check_in).getTime() - new Date(b.check_in).getTime());
 
-        const nextCheckIn = futureBookings[0] || null;
+            const nextCheckIn = futureBookings[0] || null;
 
-        // Simple occupancy (days booked / days in month) - Approximation
-        const daysInMonth = 30; // avg
-        const bookedDays = currentMonthBookings.reduce((sum, b) => {
-            if (!b.check_in || !b.check_out) return sum;
-            return sum + differenceInDays(parseISO(b.check_out), parseISO(b.check_in));
-        }, 0);
-        const occupancyRate = Math.min(Math.round((bookedDays / (daysInMonth * 2)) * 100), 100); // *2 for 2 units
+            // Simple occupancy (days booked / days in month) - Approximation
+            const daysInMonth = 30; // avg
+            const bookedDays = currentMonthBookings.reduce((sum, b) => {
+                if (!b.check_in || !b.check_out) return sum;
+                return sum + differenceInDays(parseISO(b.check_out), parseISO(b.check_in));
+            }, 0);
+            const occupancyRate = Math.min(Math.round((bookedDays / (daysInMonth * 2)) * 100), 100); // *2 for 2 units
 
-        setStats({
-            monthlyRevenue,
-            occupancyRate,
-            pendingBookings: pending,
-            nextCheckIn
-        });
+            setStats({
+                monthlyRevenue,
+                occupancyRate,
+                pendingBookings: pending,
+                nextCheckIn
+            });
+        } catch (error) {
+            console.error('Error calculating dashboard stats:', error);
+        }
     };
 
     const handleNewBookingCreate = async (bookingData: any) => {
