@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { format, differenceInDays, parseISO, isWithinInterval, isSameDay } from 'date-fns';
-import { Loader2, Search, Coffee, Sparkles, Inbox, MoreVertical, Check, X, User, Baby, Cat, CalendarOff } from 'lucide-react';
+import { format, differenceInDays, parseISO, isWithinInterval } from 'date-fns';
+import { Loader2, Search, MoreVertical, Check, X, User, Baby, Cat, CalendarOff } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { Booking } from '../../types/supabase';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import type { Booking } from '../../types/supabase';
+import { Card, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { BookingModal } from './BookingModal';
 import { ActionConfirmModal } from './ActionConfirmModal';
-import { MessageType } from '../../utils/whatsappUtils';
+import type { MessageType } from '../../utils/whatsappUtils';
 
 interface BookingListProps {
     initialBookings?: Booking[];
@@ -109,7 +109,6 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                                 <button
                                     onClick={onClearFilter}
                                     className="text-xs text-gray-400 hover:text-red-500 underline transition-colors"
-                                    onClick={onClearFilter}
                                 >
                                     נקה סינון
                                 </button>

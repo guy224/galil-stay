@@ -1,160 +1,156 @@
 import React, { useState } from 'react';
-import {
-    format,
-    startOfMonth,
-    endOfMonth,
-    startOfWeek,
-    endOfWeek,
-    eachDayOfInterval,
-    isSameMonth,
-    isSameDay,
-    isWithinInterval,
-    parseISO,
-    addMonths,
-    subMonths
-} from 'date-fns';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
-import { Booking } from '../../types/supabase';
-import { Button } from '../ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, getDay, parseISO, isWithinInterval } from 'date-fns';
+import { he } from 'date-fns/locale';
+import { ChevronRight, ChevronLeft, Calendar as CalendarIcon } from 'lucide-react';
+import type { Booking } from '../../types/supabase';
+import { Button } from '../../components/ui/Button';
 
 interface DashboardCalendarProps {
     bookings: Booking[];
-    selectedDate: Date | null;
-    onSelectDate: (date: Date | null) => void;
+    onSelectDate?: (date: Date | null) => void;
+    selectedDate?: Date | null;
 }
 
-export function DashboardCalendar({ bookings, selectedDate, onSelectDate }: DashboardCalendarProps) {
+export function DashboardCalendar({ bookings, onSelectDate, selectedDate }: DashboardCalendarProps) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
-    const startDate = startOfWeek(startOfMonth(currentMonth));
-    const endDate = endOfWeek(endOfMonth(currentMonth));
-    const days = eachDayOfInterval({ start: startDate, end: endDate });
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+    // Calculate empty cells for start of month
+    // Sunday is 0, Monday is 1, etc.
+    // We want Sunday to be the first column (RTL or standard grid)
+    const startDay = getDay(monthStart);
+    const emptyDays = Array(startDay).fill(null);
 
     const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
     const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-    const resetToday = () => {
-        const today = new Date();
-        setCurrentMonth(today);
-        onSelectDate(today);
-    };
 
     const getDayStatus = (date: Date) => {
-        const dayBookings = bookings.filter(b =>
-            b.status === 'approved' &&
-            isWithinInterval(date, {
-                start: parseISO(b.check_in),
-                end: parseISO(b.check_out)
-            })
-        );
+        // Filter bookings for this day
+        const dayBookings = bookings.filter(b => {
+            if (b.status === 'declined') return false;
+            const start = parseISO(b.check_in);
+            const end = parseISO(b.check_out);
+            return isWithinInterval(date, { start, end });
+        });
 
-        if (dayBookings.length === 0) return 'free';
-
-        // Check if it's a start or end date
-        const isStart = dayBookings.some(b => isSameDay(parseISO(b.check_in), date));
-        const isEnd = dayBookings.some(b => isSameDay(parseISO(b.check_out), date));
-
-        if (isStart && isEnd) return 'overlap'; // Check-out and Check-in on same day
-        if (isStart) return 'start';
-        if (isEnd) return 'end';
-        return 'booked';
+        if (dayBookings.length === 0) return 'empty';
+        if (dayBookings.some(b => b.unit_type === 'villa')) return 'villa';
+        if (dayBookings.some(b => b.unit_type === 'zimmer')) return 'zimmer';
+        // If both? rare case, prioritize villa or show mixed color
+        return 'mixed';
     };
 
     const handleDateClick = (date: Date) => {
-        if (selectedDate && isSameDay(selectedDate, date)) {
-            onSelectDate(null); // Deselect
-        } else {
-            onSelectDate(date);
+        if (onSelectDate) {
+            if (selectedDate && isSameDay(date, selectedDate)) {
+                onSelectDate(null); // Deselect
+            } else {
+                onSelectDate(date);
+            }
         }
     };
 
     return (
-        <Card className="h-full border-none shadow-sm bg-white overflow-hidden flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between p-4 border-b bg-gray-50/50">
-                <div className="flex items-center gap-2">
-                    <CardTitle className="text-lg font-bold text-gray-900">
-                        {format(currentMonth, 'MMMM yyyy')}
-                    </CardTitle>
-                </div>
-                <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" onClick={prevMonth} className="h-8 w-8 p-0">
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={resetToday} className="text-xs h-8">
-                        היום
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={nextMonth} className="h-8 w-8 p-0">
+        <div className="bg-white rounded-xl shadow-sm border p-4">
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <CalendarIcon className="h-5 w-5 text-gray-500" />
+                    {format(currentMonth, 'MMMM yyyy', { locale: he })}
+                </h2>
+                <div className="flex gap-1" dir="ltr"> {/* Reverse direction for buttons to feel natural prev/next */}
+                    <Button variant="ghost" size="sm" onClick={prevMonth}>
                         <ChevronLeft className="h-4 w-4" />
                     </Button>
+                    <Button variant="ghost" size="sm" onClick={nextMonth}>
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
                 </div>
-            </CardHeader>
+            </div>
 
-            <CardContent className="p-4 flex-1 overflow-y-auto">
-                {/* Weekday Headers */}
-                <div className="grid grid-cols-7 mb-2 text-center">
-                    {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map((day) => (
-                        <div key={day} className="text-xs font-semibold text-gray-400 py-2">
-                            {day}
-                        </div>
-                    ))}
-                </div>
+            <div className="grid grid-cols-7 gap-1 text-center text-sm mb-2">
+                {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map(day => (
+                    <div key={day} className="text-gray-400 font-medium text-xs py-1">
+                        {day}
+                    </div>
+                ))}
+            </div>
 
-                {/* Days Grid */}
-                <div className="grid grid-cols-7 gap-2">
-                    {days.map((day, dayIdx) => {
-                        const status = getDayStatus(day);
-                        const isSelected = selectedDate && isSameDay(day, selectedDate);
-                        const isCurrentMonth = isSameMonth(day, currentMonth);
-                        const isToday = isSameDay(day, new Date());
+            <div className="grid grid-cols-7 gap-1">
+                {emptyDays.map((_, i) => (
+                    <div key={`empty-${i}`} className="aspect-square" />
+                ))}
 
-                        return (
-                            <button
-                                key={day.toString()}
-                                onClick={() => handleDateClick(day)}
-                                className={`
-                                    relative h-14 rounded-lg flex flex-col items-center justify-center text-sm transition-all border
-                                    ${!isCurrentMonth ? 'text-gray-300 bg-gray-50/30' : 'text-gray-700'}
-                                    ${isSelected ? 'ring-2 ring-primary ring-offset-2 z-10' : ''}
-                                    ${isToday && !isSelected ? 'border-primary/30 font-bold bg-primary/5' : ''}
-                                    ${!isSelected && !isToday ? 'border-transparent hover:bg-gray-50' : ''}
-                                    ${status === 'booked' ? 'bg-red-50 text-red-900' : ''}
-                                `}
-                            >
-                                <span className="z-10">{format(day, 'd')}</span>
+                {monthDays.map((day, i) => {
+                    const status = getDayStatus(day);
+                    const isSelected = selectedDate && isSameDay(day, selectedDate);
+                    const isToday = isSameDay(day, new Date());
 
-                                {/* Status Indicators */}
-                                <div className="absolute inset-0 rounded-lg overflow-hidden opacity-20">
-                                    {status === 'booked' && <div className="w-full h-full bg-red-500" />}
-                                    {status === 'start' && <div className="w-full h-full bg-gradient-to-l from-red-500 to-transparent" />}
-                                    {status === 'end' && <div className="w-full h-full bg-gradient-to-r from-red-500 to-transparent" />}
-                                    {status === 'overlap' && (
-                                        <div className="w-full h-full flex">
-                                            <div className="w-1/2 bg-red-500" />
-                                            <div className="w-1/2 bg-red-500 opacity-50" />
-                                        </div>
-                                    )}
-                                </div>
+                    let bgClass = "hover:bg-gray-100/50";
+                    let textClass = "text-gray-700";
 
-                                {status !== 'free' && (
-                                    <div className="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-red-500" />
+                    if (isSelected) {
+                        bgClass = "bg-primary text-white hover:bg-primary/90 shadow-md ring-2 ring-primary/20 scale-105 z-10";
+                        textClass = "text-white font-bold";
+                    } else if (status === 'villa') {
+                        bgClass = "bg-blue-50 hover:bg-blue-100 border border-blue-100";
+                        textClass = "text-blue-700 font-medium";
+                    } else if (status === 'zimmer') {
+                        bgClass = "bg-green-50 hover:bg-green-100 border border-green-100";
+                        textClass = "text-green-700 font-medium";
+                    } else if (status === 'mixed') {
+                        bgClass = "bg-purple-50 hover:bg-purple-100 border border-purple-100";
+                        textClass = "text-purple-700 font-medium";
+                    }
+
+                    if (isToday && !isSelected) {
+                        textClass += " text-primary font-bold";
+                        bgClass += " ring-1 ring-primary/30";
+                    }
+
+                    return (
+                        <button
+                            key={i}
+                            onClick={() => handleDateClick(day)}
+                            className={`
+                                aspect-square rounded-lg flex flex-col items-center justify-center
+                                transition-all duration-200 text-sm relative group
+                                ${bgClass}
+                                ${textClass}
+                            `}
+                        >
+                            <span>{format(day, 'd')}</span>
+                            <div className="flex gap-0.5 mt-1 h-1.5">
+                                {status === 'villa' && <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />}
+                                {status === 'zimmer' && <div className="w-1.5 h-1.5 rounded-full bg-green-400" />}
+                                {status === 'mixed' && (
+                                    <>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                                    </>
                                 )}
-                            </button>
-                        );
-                    })}
-                </div>
+                            </div>
+                        </button>
+                    );
+                })}
+            </div>
 
-                <div className="mt-6 flex flex-col gap-2 text-xs text-gray-400 px-2">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-red-500" />
-                        <span>תפוס מלא</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-transparent border border-primary/30" />
-                        <span>פנוי</span>
-                    </div>
+            <div className="mt-4 flex flex-wrap gap-4 text-xs text-gray-500 justify-center border-t pt-3">
+                <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-blue-400" />
+                    <span>וילה</span>
                 </div>
-
-            </CardContent>
-        </Card>
+                <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                    <span>צימר</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full border border-gray-300" />
+                    <span>פנוי</span>
+                </div>
+            </div>
+        </div>
     );
 }

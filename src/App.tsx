@@ -6,6 +6,7 @@ import VillaPage from './pages/Villa';
 import GuestPortal from './pages/GuestPortal';
 import AdminDashboard from './pages/AdminDashboard';
 import Login from './pages/Login';
+import UnitSettings from './pages/UnitSettings';
 
 import { ToastProvider } from './components/ui/Toast';
 
@@ -26,6 +27,7 @@ function App() {
             {/* Admin Routes */}
             <Route path="/admin/login" element={<Login />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/settings" element={<UnitSettings />} />
           </Routes>
         </div>
       </Router>
@@ -34,4 +36,3 @@ function App() {
 }
 
 export default App;
-

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Unit, SeasonalPrice } from '../types/supabase';
+import type { Unit, SeasonalPrice } from '../types/supabase';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Loader2, Plus, Trash2, Save, Calendar } from 'lucide-react';
@@ -155,8 +155,8 @@ export default function UnitSettings() {
                     <button
                         onClick={() => setActiveTab('villa')}
                         className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'villa'
-                                ? 'bg-white text-primary shadow-sm'
-                                : 'text-gray-600 hover:text-gray-900'
+                            ? 'bg-white text-primary shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
                             }`}
                     >
                         וילה בגליל
@@ -164,8 +164,8 @@ export default function UnitSettings() {
                     <button
                         onClick={() => setActiveTab('zimmer')}
                         className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'zimmer'
-                                ? 'bg-white text-primary shadow-sm'
-                                : 'text-gray-600 hover:text-gray-900'
+                            ? 'bg-white text-primary shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900'
                             }`}
                     >
                         צימר בין הנחלים

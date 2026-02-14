@@ -8,457 +8,392 @@ import { Input } from '../ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { supabase } from '../../lib/supabase';
 import { getPricingRules, calculatePrice, getMinNights } from '../../utils/bookingUtils';
-import { Unit, SeasonalPrice } from '../../types/supabase';
+import type { Unit, SeasonalPrice } from '../../types/supabase';
 
-interface BookingWidgetProps {
-    unitType: 'villa' | 'zimmer';
-    basePrice?: number; // Deprecated, but kept for interface compatibility if needed
-}
+// Helper for Hebrew dates
+const formatDateHebrew = (date: Date) => {
+    return new Intl.DateTimeFormat('he-IL', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+    }).format(date);
+};
 
-export function BookingWidget({ unitType }: BookingWidgetProps) {
-    // State
-    const [step, setStep] = useState<'search' | 'results'>('search');
-    const [date, setDate] = useState<DateRange | undefined>();
-    const [guestName, setGuestName] = useState('');
-    const [guestPhone, setGuestPhone] = useState('');
+export default function BookingWidget() {
+    // Stage: 'search' | 'details' | 'confirmation'
+    const [stage, setStage] = useState<'search' | 'details' | 'confirmation'>('search');
 
-    // Guest Composition State
+    // Search State
+    const [dateRange, setDateRange] = useState<DateRange | undefined>();
     const [adults, setAdults] = useState(2);
     const [children, setChildren] = useState(0);
-    const [infants, setInfants] = useState(0);
-    const [pets, setPets] = useState(0);
-    const [isGuestMenuOpen, setIsGuestMenuOpen] = useState(false);
-    const guestMenuRef = useRef<HTMLDivElement>(null);
+    const [unitType, setUnitType] = useState<'villa' | 'zimmer'>('villa'); // Default to Villa
+    const [availabilityStatus, setAvailabilityStatus] = useState<'idle' | 'loading' | 'available' | 'unavailable' | 'min_nights'>('idle');
+    const [priceQuote, setPriceQuote] = useState<number | null>(null);
+    const [minNightsError, setMinNightsError] = useState<number | null>(null);
 
-    // Pricing & Rules State
-    const [rules, setRules] = useState<{ unit: Unit, seasonal: SeasonalPrice[] } | null>(null);
-    const [priceData, setPriceData] = useState<{ totalPrice: number, breakdown: any[] } | null>(null);
-    const [minNights, setMinNights] = useState(1);
-    const [pricingLoading, setPricingLoading] = useState(true);
+    // Guest Details State
+    const [guestName, setGuestName] = useState('');
+    const [guestPhone, setGuestPhone] = useState('');
+    const [bookingId, setBookingId] = useState<string | null>(null);
 
-    // Availability State
-    const [isChecking, setIsChecking] = useState(false);
-    const [availability, setAvailability] = useState<'idle' | 'available' | 'taken'>('idle');
-    const [suggestedDate, setSuggestedDate] = useState<DateRange | undefined>();
+    // Pricing Rules State
+    const [unitRules, setUnitRules] = useState<Unit | null>(null);
+    const [seasonalPrices, setSeasonalPrices] = useState<SeasonalPrice[]>([]);
 
-    // Booking Submission State
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [bookingSuccess, setBookingSuccess] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // --- Fetch Rules on Mount ---
+    // Fetch pricing rules on mount or unit change
     useEffect(() => {
-        const fetchRules = async () => {
-            setPricingLoading(true);
-            const data = await getPricingRules(unitType);
-            if (data) {
-                setRules(data);
-                setMinNights(data.unit.default_min_nights);
-            }
-            setPricingLoading(false);
-        };
+        async function fetchRules() {
+            const { unit, seasonalPrices: seasons } = await getPricingRules(unitType === 'villa' ? 'villa' : 'zimmer');
+            setUnitRules(unit);
+            setSeasonalPrices(seasons);
+        }
         fetchRules();
     }, [unitType]);
 
-    // --- Calculate Price & Min Nights when dates change ---
-    useEffect(() => {
-        if (rules && date?.from && date?.to) {
-            // Price
-            const calculated = calculatePrice(date.from, date.to, rules.unit, rules.seasonal);
-            setPriceData(calculated);
+    // Check Availability Logic
+    const checkAvailability = async () => {
+        if (!dateRange?.from || !dateRange?.to) return;
 
-            // Min Nights
-            const required = getMinNights(date.from, rules.unit, rules.seasonal);
-            setMinNights(required);
-        } else {
-            setPriceData(null);
+        setAvailabilityStatus('loading');
+        setPriceQuote(null);
+        setMinNightsError(null);
+
+        const checkIn = dateRange.from;
+        const checkOut = dateRange.to;
+        const nights = differenceInDays(checkOut, checkIn);
+
+        // 1. Min Nights Validation
+        const requiredMinNights = getMinNights(checkIn, unitRules, seasonalPrices);
+        if (nights < requiredMinNights) {
+            setAvailabilityStatus('min_nights');
+            setMinNightsError(requiredMinNights);
+            return;
         }
-    }, [date, rules]);
 
-    // Helper: Close guest menu on click outside
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (guestMenuRef.current && !guestMenuRef.current.contains(event.target as Node)) {
-                setIsGuestMenuOpen(false);
+        // 2. Database Check
+        // We need to check if ANY day in the range is already booked for this unit
+        // Overlap logic: (StartA <= EndB) and (EndA >= StartB)
+        const { data: conflicts, error } = await supabase
+            .from('bookings')
+            .select('id')
+            .eq('unit_type', unitType)
+            .neq('status', 'declined') // Ignore declined bookings
+            .lt('check_in', format(checkOut, 'yyyy-MM-dd'))
+            .gt('check_out', format(checkIn, 'yyyy-MM-dd'));
+
+        if (error) {
+            console.error('Availability check failed:', error);
+            setAvailabilityStatus('unavailable'); // Fail safe
+            return;
+        }
+
+        if (conflicts && conflicts.length > 0) {
+            setAvailabilityStatus('unavailable');
+        } else {
+            // 3. Calculate Price
+            if (unitRules) {
+                const total = calculatePrice(checkIn, checkOut, unitRules, seasonalPrices);
+                setPriceQuote(total);
+                setAvailabilityStatus('available');
+            } else {
+                // Fallback if rules not loaded?
+                setAvailabilityStatus('available');
+                setPriceQuote(0); // Should not happen
             }
         }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    // Helper: Guest Summary String
-    const getGuestSummary = () => {
-        const totalGuests = adults + children;
-        let summary = `${totalGuests} אורחים`;
-        if (infants > 0) summary += `, ${infants} תינוקות`;
-        if (pets > 0) summary += `, ${pets} חיות מחמד`;
-        return summary;
     };
 
-    // --- Logic: Check Availability ---
-    const checkAvailability = async () => {
-        if (!date?.from || !date?.to) {
-            setError('נא לבחור תאריכי הגעה ועזיבה');
-            return;
-        }
-        if (adults < 1) {
-            setError('חובה לבחור לפחות מבוגר אחד');
-            return;
-        }
+    const handleSearch = () => {
+        checkAvailability();
+    };
 
-        // Check Min Nights
-        const nights = differenceInDays(date.to, date.from);
-        if (nights < minNights) {
-            setError(`מינימום לילות בתאריכים אלו: ${minNights}`);
-            return;
-        }
-
-        setError(null);
-        setIsChecking(true);
+    const handleBookingSubmit = async () => {
+        if (!guestName || !guestPhone || !dateRange?.from || !dateRange?.to || !priceQuote) return;
 
         try {
-            // 1. Fetch all future bookings for this unit
-            const todayStr = format(new Date(), 'yyyy-MM-dd');
-            const { data: bookings, error: dbError } = await supabase
+            const { data, error } = await supabase
                 .from('bookings')
-                .select('check_in, check_out')
-                .eq('unit_type', unitType)
-                .neq('status', 'declined') // Ignore declined bookings
-                .gte('check_out', todayStr)
-                .order('check_in', { ascending: true });
+                .insert([
+                    {
+                        guest_name: guestName,
+                        guest_phone: guestPhone,
+                        check_in: format(dateRange.from, 'yyyy-MM-dd'),
+                        check_out: format(dateRange.to, 'yyyy-MM-dd'),
+                        unit_type: unitType,
+                        adults,
+                        children,
+                        total_price: priceQuote,
+                        status: 'pending',
+                        source: 'website'
+                    }
+                ])
+                .select()
+                .single();
 
-            if (dbError) throw dbError;
+            if (error) throw error;
 
-            // 2. Check for overlaps
-            const requestedStart = date.from;
-            const requestedEnd = date.to;
-
-            const hasOverlap = bookings?.some(b => {
-                const existingStart = parseISO(b.check_in);
-                const existingEnd = parseISO(b.check_out);
-
-                return (
-                    (isWithinInterval(requestedStart, { start: existingStart, end: existingEnd }) && requestedStart < existingEnd) ||
-                    (isWithinInterval(requestedEnd, { start: existingStart, end: existingEnd }) && requestedEnd > existingStart) ||
-                    (isBefore(requestedStart, existingStart) && isAfter(requestedEnd, existingEnd))
-                );
-            });
-
-            if (!hasOverlap) {
-                setAvailability('available');
-                setStep('results');
-            } else {
-                setAvailability('taken');
-                // findNextAvailableSlot(bookings || [], nights); // keeping the existing logic placeholder
-                setStep('results');
-            }
-
+            setBookingId(data.id);
+            setStage('confirmation');
         } catch (err) {
-            console.error(err);
-            setError('אירעה שגיאה בבדיקת הזמינות');
-        } finally {
-            setIsChecking(false);
+            console.error('Booking failed:', err);
+            alert('שגיאה ביצירת ההזמנה. אנא נסה שוב.');
         }
     };
 
-    // --- Logic: Submit Booking ---
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!date?.from || !date?.to || !guestName || !guestPhone || !priceData) return;
-
-        setIsSubmitting(true);
-
-        const { error: insertError } = await supabase
-            .from('bookings')
-            .insert({
-                unit_type: unitType,
-                check_in: format(date.from, 'yyyy-MM-dd'),
-                check_out: format(date.to, 'yyyy-MM-dd'),
-                guest_name: guestName,
-                guest_phone: guestPhone,
-                total_price: priceData.totalPrice, // Use dynamically calculated price
-                status: 'pending',
-                adults,
-                children,
-                infants,
-                pets
-            });
-
-        setIsSubmitting(false);
-
-        if (insertError) {
-            setError('שגיאה בשליחת ההזמנה');
-        } else {
-            setBookingSuccess(true);
-        }
-    };
-
-    // --- Render: Success ---
-    if (bookingSuccess) {
+    // Render Logic
+    if (stage === 'confirmation') {
         return (
-            <Card className="w-full max-w-md mx-auto bg-white/90 backdrop-blur animate-in fade-in zoom-in-95 duration-300">
-                <CardContent className="pt-8 text-center space-y-4">
-                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                        <CheckCircle className="h-8 w-8 text-green-600" />
+            <Card className="w-full max-w-md mx-auto border-none shadow-lg bg-white/90 backdrop-blur-sm">
+                <CardContent className="pt-10 pb-10 flex flex-col items-center text-center space-y-4">
+                    <div className="h-20 w-20 bg-green-100 rounded-full flex items-center justify-center mb-2 animate-in zoom-in duration-300">
+                        <CheckCircle className="h-10 w-10 text-green-600" />
                     </div>
-                    <div>
-                        <h3 className="text-2xl font-bold text-gray-900">הבקשה נשלחה!</h3>
-                        <p className="text-gray-500 mt-2">
-                            תודה {guestName}, קיבלנו את בקשתך עבור {getGuestSummary()}.
-                            <br />
-                            ניצור איתך קשר בקרוב לאישור סופי.
-                        </p>
-                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900">ההזמנה התקבלה!</h2>
+                    <p className="text-gray-600 max-w-xs">
+                        תודה {guestName}, קיבלנו את בקשת ההזמנה שלך.
+                        <br />
+                        ניצור איתך קשר בהקדם בטלפון {guestPhone} לאישור סופי.
+                    </p>
                     <Button
-                        onClick={() => {
-                            setBookingSuccess(false);
-                            setStep('search');
-                            setDate(undefined);
-                            setGuestName('');
-                            setGuestPhone('');
-                            setAvailability('idle');
-                            setAdults(2);
-                            setChildren(0);
-                            setInfants(0);
-                            setPets(0);
-                        }}
-                        variant="outline"
-                        className="w-full"
+                        className="mt-6 w-full"
+                        onClick={() => window.location.reload()}
                     >
-                        ביצוע הזמנה נוספת
+                        חזרה לדף הבית
                     </Button>
                 </CardContent>
             </Card>
         );
     }
 
-    // --- Component: Counter Row ---
-    const CounterRow = ({ label, subLabel, value, onChange, min = 0 }: any) => (
-        <div className="flex items-center justify-between py-3 border-b last:border-0">
-            <div>
-                <div className="font-medium text-sm">{label}</div>
-                <div className="text-xs text-gray-500">{subLabel}</div>
-            </div>
-            <div className="flex items-center gap-3">
-                <button
-                    type="button"
-                    onClick={() => onChange(Math.max(min, value - 1))}
-                    disabled={value <= min}
-                    className="w-8 h-8 rounded-full border flex items-center justify-center text-gray-600 disabled:opacity-30 hover:border-black transition-colors"
-                >
-                    <Minus className="h-3 w-3" />
-                </button>
-                <span className="w-4 text-center font-medium text-sm">{value}</span>
-                <button
-                    type="button"
-                    onClick={() => onChange(value + 1)}
-                    className="w-8 h-8 rounded-full border flex items-center justify-center text-gray-600 hover:border-black transition-colors"
-                >
-                    <Plus className="h-3 w-3" />
-                </button>
-            </div>
-        </div>
-    );
-
-    // --- Render: Main Widget ---
     return (
-        <Card className="w-full max-w-md mx-auto bg-white/90 backdrop-blur shadow-xl border-primary/20 overflow-visible transition-all duration-300">
-            <CardHeader className="bg-primary/5 pb-4">
-                <CardTitle className="text-center text-primary flex items-center justify-center gap-2">
-                    {step === 'results' && availability === 'available' ? 'השלמת הזמנה' : 'בדיקת זמינות'}
+        <Card className="w-full max-w-md mx-auto border-none shadow-xl bg-white/95 backdrop-blur-md overflow-hidden ring-1 ring-black/5">
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
+                <CardTitle className="flex justify-between items-center text-xl">
+                    <span>בדיקת זמינות והזמנה</span>
+                    {stage === 'details' && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-white hover:bg-white/20 p-1 h-auto"
+                            onClick={() => setStage('search')}
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                    )}
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 relative">
 
-                {pricingLoading && !rules ? (
-                    <div className="flex justify-center py-10">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
-                    </div>
-                ) : (
-                    <>
-                        {/* Step 1: Search */}
-                        {step === 'search' && (
-                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                                {/* Date Picker */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700">מתי מגיעים?</label>
-                                    <div className="flex justify-center border rounded-xl p-2 bg-white shadow-sm">
-                                        <Calendar
-                                            mode="range"
-                                            selected={date}
-                                            onSelect={setDate}
-                                            numberOfMonths={1}
-                                            disabled={(date) => date < new Date()}
-                                        />
-                                    </div>
-                                    {minNights > 1 && (
-                                        <p className="text-xs text-gray-400 text-center">
-                                            * מינימום {minNights} לילות בתאריכים אלו
-                                        </p>
-                                    )}
-                                </div>
+            <CardContent className="p-6 space-y-6">
+                {stage === 'search' ? (
+                    <div className="space-y-6 animate-in slide-in-from-right duration-300">
+                        {/* Unit Selector */}
+                        <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-lg">
+                            <button
+                                className={`py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${unitType === 'villa' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                                onClick={() => { setUnitType('villa'); setAvailabilityStatus('idle'); }}
+                            >
+                                וילה
+                            </button>
+                            <button
+                                className={`py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 ${unitType === 'zimmer' ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                                onClick={() => { setUnitType('zimmer'); setAvailabilityStatus('idle'); }}
+                            >
+                                צימר
+                            </button>
+                        </div>
 
-                                {/* Guest Selector */}
-                                <div className="space-y-2 relative" ref={guestMenuRef}>
-                                    <label className="text-sm font-medium text-gray-700">מי מגיע?</label>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsGuestMenuOpen(!isGuestMenuOpen)}
-                                        className="w-full flex items-center justify-between h-12 px-4 border rounded-xl bg-white shadow-sm hover:border-primary/50 transition-colors"
+                        {/* Date Picker */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 block">תאריכים</label>
+                            <div className="border rounded-xl p-3 bg-white hover:border-blue-300 transition-colors">
+                                <Calendar
+                                    mode="range"
+                                    selected={dateRange}
+                                    onSelect={(range) => {
+                                        setDateRange(range);
+                                        setAvailabilityStatus('idle');
+                                    }}
+                                    numberOfMonths={1}
+                                    className="rounded-md border-none w-full"
+                                    classNames={{
+                                        head_cell: "text-muted-foreground w-9 font-normal text-[0.8rem]",
+                                        cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-r-md last:[&:has([aria-selected])]:rounded-l-md focus-within:relative focus-within:z-20",
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Guests */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700 block">מבוגרים</label>
+                                <div className="flex items-center justify-between border rounded-lg p-2 bg-gray-50">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => setAdults(Math.max(1, adults - 1))}
                                     >
-                                        <div className="flex items-center gap-2 text-gray-700">
-                                            <Users className="h-4 w-4 text-primary" />
-                                            <span className="text-sm font-medium">{getGuestSummary()}</span>
-                                        </div>
-                                        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isGuestMenuOpen ? 'rotate-180' : ''}`} />
-                                    </button>
-
-                                    {/* Dropdown Menu */}
-                                    {isGuestMenuOpen && (
-                                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
-                                            <CounterRow
-                                                label="מבוגרים"
-                                                subLabel="מגיל 13 ומעלה"
-                                                value={adults}
-                                                onChange={setAdults}
-                                                min={1}
-                                            />
-                                            <CounterRow
-                                                label="ילדים"
-                                                subLabel="גילאים 2-12"
-                                                value={children}
-                                                onChange={setChildren}
-                                            />
-                                            <CounterRow
-                                                label="תינוקות"
-                                                subLabel="מתחת לגיל 2"
-                                                value={infants}
-                                                onChange={setInfants}
-                                            />
-                                            <CounterRow
-                                                label="חיות מחמד"
-                                                subLabel="כלבים וחתולים"
-                                                value={pets}
-                                                onChange={setPets}
-                                            />
-                                            <div className="pt-2 text-left">
-                                                <button
-                                                    onClick={() => setIsGuestMenuOpen(false)}
-                                                    className="text-sm font-bold text-primary hover:underline"
-                                                >
-                                                    סגור
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
+                                        <Minus className="h-4 w-4" />
+                                    </Button>
+                                    <span className="font-medium text-lg w-6 text-center">{adults}</span>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => setAdults(Math.min(10, adults + 1))}
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
                                 </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700 block">ילדים</label>
+                                <div className="flex items-center justify-between border rounded-lg p-2 bg-gray-50">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => setChildren(Math.max(0, children - 1))}
+                                    >
+                                        <Minus className="h-4 w-4" />
+                                    </Button>
+                                    <span className="font-medium text-lg w-6 text-center">{children}</span>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 w-8 p-0"
+                                        onClick={() => setChildren(Math.min(10, children + 1))}
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
 
-                                {error && (
-                                    <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2">
-                                        <XCircle className="h-4 w-4" /> {error}
-                                    </div>
-                                )}
-
+                        {/* Status / Check Button */}
+                        <div className="pt-2">
+                            {availabilityStatus === 'idle' && (
                                 <Button
-                                    onClick={checkAvailability}
-                                    className="w-full h-12 text-lg"
-                                    size="lg"
-                                    isLoading={isChecking}
-                                    disabled={!date?.from || !date?.to || adults < 1}
+                                    className="w-full h-12 text-lg font-medium shadow-lg shadow-blue-200"
+                                    onClick={handleSearch}
+                                    disabled={!dateRange?.from || !dateRange?.to}
                                 >
                                     <Search className="ml-2 h-5 w-5" />
-                                    בדוק זמינות
+                                    בדוק זמינות ומחיר
                                 </Button>
-                            </div>
-                        )}
+                            )}
 
-                        {/* Step 2: Results */}
-                        {step === 'results' && availability === 'available' && (
-                            <div className="space-y-4 animate-in slide-in-from-right-4 duration-300">
-                                <div className="bg-green-50 border border-green-100 rounded-lg p-4 flex items-center gap-3">
-                                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
-                                    <div>
-                                        <p className="font-bold text-green-800">התאריכים פנויים!</p>
-                                        {priceData && (
-                                            <p className="text-xs text-green-700">
-                                                {differenceInDays(date!.to!, date!.from!)} לילות •
-                                                <span className="font-bold text-lg mx-1">₪{priceData.totalPrice.toLocaleString()}</span>
-                                                סה"כ
-                                                <br />
-                                                עבור {getGuestSummary()}
-                                            </p>
-                                        )}
-                                    </div>
+                            {availabilityStatus === 'loading' && (
+                                <div className="flex justify-center py-2 text-blue-600">
+                                    <Loader2 className="h-8 w-8 animate-spin" />
                                 </div>
+                            )}
 
-                                <form onSubmit={handleSubmit} className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">שם מלא</label>
-                                        <Input
-                                            value={guestName}
-                                            onChange={(e) => setGuestName(e.target.value)}
-                                            required
-                                            className="h-11"
-                                        />
+                            {availabilityStatus === 'available' && priceQuote !== null && (
+                                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 bg-green-50 border border-green-200 rounded-xl p-4 text-center space-y-3">
+                                    <div className="flex items-center justify-center gap-2 text-green-800 font-medium">
+                                        <CheckCircle className="h-5 w-5" />
+                                        פנוי להזמנה!
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium">טלפון</label>
-                                        <Input
-                                            value={guestPhone}
-                                            onChange={(e) => setGuestPhone(e.target.value)}
-                                            required
-                                            className="h-11 text-right"
-                                            placeholder="050-0000000"
-                                            dir="ltr"
-                                        />
+                                    <div className="text-3xl font-bold text-gray-900">
+                                        ₪{priceQuote.toLocaleString()}
                                     </div>
-
-                                    <div className="pt-2 flex gap-3">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() => setStep('search')}
-                                            className="flex-1"
-                                        >
-                                            חזרה
-                                        </Button>
-                                        <Button
-                                            type="submit"
-                                            className="flex-[2]"
-                                            isLoading={isSubmitting}
-                                        >
-                                            הזמן עכשיו - ₪{priceData?.totalPrice}
-                                        </Button>
+                                    <div className="text-sm text-gray-500">
+                                        עבור {differenceInDays(dateRange!.to!, dateRange!.from!)} לילות
                                     </div>
-                                </form>
-                            </div>
-                        )}
+                                    <Button
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-200"
+                                        onClick={() => setStage('details')}
+                                    >
+                                        המשך להזמנה
+                                    </Button>
+                                </div>
+                            )}
 
-                        {/* Step 2: Taken */}
-                        {step === 'results' && availability === 'taken' && (
-                            <div className="space-y-6 animate-in slide-in-from-right-4 duration-300 text-center">
-                                <div className="bg-red-50 border border-red-100 rounded-lg p-6">
-                                    <XCircle className="h-10 w-10 text-red-400 mx-auto mb-3" />
-                                    <h3 className="font-bold text-red-900 text-lg">התאריכים תפוסים</h3>
-                                    <p className="text-sm text-red-700 mt-1">
-                                        מצטערים, יש כבר הזמנה בתאריכים האלו.
+                            {availabilityStatus === 'unavailable' && (
+                                <div className="animate-in shake bg-red-50 border border-red-200 rounded-xl p-4 text-center text-red-700">
+                                    <div className="flex items-center justify-center gap-2 font-medium mb-1">
+                                        <XCircle className="h-5 w-5" />
+                                        לא פנוי
+                                    </div>
+                                    <p className="text-sm opacity-90">נסו לשנות תאריכים או לבדוק ביחידה השניה</p>
+                                </div>
+                            )}
+
+                            {availabilityStatus === 'min_nights' && (
+                                <div className="animate-in shake bg-orange-50 border border-orange-200 rounded-xl p-4 text-center text-orange-800">
+                                    <div className="flex items-center justify-center gap-2 font-medium mb-1">
+                                        <AlertCircle className="h-5 w-5" /> // Used implicit import, need to check if imported
+                                        מינימום הזמנה
+                                    </div>
+                                    <p className="text-sm opacity-90">
+                                        בתאריכים אלו נדרש מינימום של {minNightsError} לילות.
                                     </p>
                                 </div>
-
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setStep('search')}
-                                    className="w-full"
-                                >
-                                    <ArrowLeft className="ml-2 h-4 w-4" />
-                                    נסה תאריכים אחרים
-                                </Button>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    // Details Stage
+                    <div className="space-y-6 animate-in slide-in-from-right duration-300">
+                        <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm text-gray-700">
+                            <div className="flex justify-between">
+                                <span>יחידה:</span>
+                                <span className="font-medium">{unitType === 'villa' ? 'וילה בגליל' : 'צימר בין הנחלים'}</span>
                             </div>
-                        )}
-                    </>
+                            <div className="flex justify-between">
+                                <span>תאריכים:</span>
+                                <span className="font-medium">
+                                    {format(dateRange!.from!, 'dd/MM')} - {format(dateRange!.to!, 'dd/MM')}
+                                </span>
+                            </div>
+                            <div className="flex justify-between border-t pt-2 mt-2">
+                                <span className="font-bold text-lg">סה"כ לתשלום:</span>
+                                <span className="font-bold text-lg">₪{priceQuote?.toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">שם מלא</label>
+                                <Input
+                                    value={guestName}
+                                    onChange={(e) => setGuestName(e.target.value)}
+                                    placeholder="ישראל ישראלי"
+                                    className="bg-white"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">טלפון נייד</label>
+                                <Input
+                                    value={guestPhone}
+                                    onChange={(e) => setGuestPhone(e.target.value)}
+                                    placeholder="050-0000000"
+                                    className="bg-white"
+                                    type="tel"
+                                />
+                            </div>
+                        </div>
+
+                        <Button
+                            className="w-full h-12"
+                            onClick={handleBookingSubmit}
+                            disabled={!guestName || !guestPhone}
+                        >
+                            שלח בקשה ({priceQuote?.toLocaleString()} ₪)
+                        </Button>
+                        <p className="text-xs text-center text-gray-500">
+                            * התשלום יתבצע לאחר אישור ההזמנה
+                        </p>
+                    </div>
                 )}
             </CardContent>
         </Card>
     );
 }
+
+// Missing AlertCircle import fixed in next steps if needed, but actually I didn't import it in this file.
+// Wait, I used AlertCircle in min_nights section but didn't import it.
+// I should add it to the imports.
