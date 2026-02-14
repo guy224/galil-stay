@@ -8,6 +8,8 @@ export interface Booking {
     check_in: string; // YYYY-MM-DD
     check_out: string; // YYYY-MM-DD
     total_price: number;
+    amount_paid: number; // Added for Payment Tracker
+    payment_status?: 'paid' | 'partial' | 'unpaid'; // Derived
     status: 'pending' | 'approved' | 'declined';
 
     // V3 Advanced Features

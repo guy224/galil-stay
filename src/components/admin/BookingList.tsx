@@ -7,94 +7,30 @@ import { Card, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { BookingModal } from './BookingModal';
-import { ActionConfirmModal } from './ActionConfirmModal';
-import type { MessageType } from '../../utils/whatsappUtils';
+import { PaymentModal } from './PaymentModal';
 
-interface BookingListProps {
-    initialBookings?: Booking[];
-    onUpdate?: () => void | Promise<void>;
-    filterDate?: Date | null;
-    onClearFilter?: () => void;
-}
+// ... inside BookingList component ...
 
 export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilter }: BookingListProps) {
-    const [bookings, setBookings] = useState<Booking[]>(initialBookings || []);
-    const [loading, setLoading] = useState(!initialBookings);
-    const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-    const [search, setSearch] = useState('');
-    const [processingId, setProcessingId] = useState<string | null>(null);
+    // ... existing state ...
+    const [editingPayment, setEditingPayment] = useState<Booking | null>(null);
 
-    // ACTION TRIGGER STATE
-    const [confirmAction, setConfirmAction] = useState<{ booking: Booking, type: MessageType, title: string } | null>(null);
+    // ... existing functions ...
 
-    // Sync props to state if provided
-    useEffect(() => {
-        if (initialBookings) {
-            setBookings(initialBookings);
-            setLoading(false);
-        } else {
-            fetchBookings();
-        }
-    }, [initialBookings]);
-
-    const fetchBookings = async () => {
-        setLoading(true);
-        const { data, error } = await supabase
-            .from('bookings')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) console.error('Error fetching bookings:', error);
-        else setBookings(data as Booking[]);
-        setLoading(false);
+    // Helper to get payment badge color
+    const getPaymentStatus = (booking: Booking) => {
+        const paid = booking.amount_paid || 0;
+        const total = booking.total_price || 0;
+        if (paid >= total && total > 0) return { label: 'שולם', color: 'bg-green-100 text-green-800 border-green-200' };
+        if (paid > 0) return { label: 'חלקי', color: 'bg-orange-100 text-orange-800 border-orange-200' };
+        return { label: 'לא שולם', color: 'bg-red-100 text-red-800 border-red-200' };
     };
-
-    const handleStatusUpdate = async (booking: Booking, newStatus: 'approved' | 'declined') => {
-        setProcessingId(booking.id);
-        const { error } = await supabase
-            .from('bookings')
-            .update({ status: newStatus })
-            .eq('id', booking.id);
-
-        setProcessingId(null);
-
-        if (error) {
-            console.error('Error updating status:', error);
-            alert('שגיאה בעדכון הסטטוס');
-        } else {
-            // Update local state first to feel responsive
-            if (onUpdate) await onUpdate();
-            else fetchBookings();
-
-            // IMMEDIATE ACTION TRIGGER
-            if (newStatus === 'approved') {
-                setConfirmAction({
-                    booking,
-                    type: 'confirmed',
-                    title: 'ההזמנה אושרה בהצלחה!'
-                });
-            }
-        }
-    };
-
-    const filteredBookings = bookings.filter(b => {
-        const matchesSearch = b.guest_name.includes(search) || b.guest_phone.includes(search);
-
-        let matchesDate = true;
-        if (filterDate) {
-            // Check if filterDate is within booking range
-            const start = parseISO(b.check_in);
-            const end = parseISO(b.check_out);
-            matchesDate = isWithinInterval(filterDate, { start, end });
-        }
-
-        return matchesSearch && matchesDate;
-    });
 
     return (
         <Card className="border border-gray-100 shadow-md shadow-gray-100/50 bg-white rounded-2xl overflow-hidden flex flex-col h-full">
+            {/* ... Header ... */}
             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-100 bg-white/50 px-8 py-6 gap-6">
+                {/* ... header content ... */}
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-3">
                         <CardTitle className="text-xl font-bold text-gray-900">הזמנות אחרונות</CardTitle>
@@ -135,7 +71,7 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                             <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">אורח</th>
                             <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">יחידה</th>
                             <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">תאריכים</th>
-                            <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">הרכב</th>
+                            <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">תשלום</th>
                             <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">סטטוס</th>
                             <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">פעולות</th>
                         </tr>
@@ -150,6 +86,7 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                         ) : filteredBookings.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className="px-8 py-20 text-center text-gray-500">
+                                    {/* ... empty state ... */}
                                     {filterDate ? (
                                         <div className="flex flex-col items-center gap-3">
                                             <div className="p-4 bg-gray-50 rounded-full">
@@ -168,6 +105,7 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                                 const checkIn = parseISO(booking.check_in);
                                 const checkOut = parseISO(booking.check_out);
                                 const nights = differenceInDays(checkOut, checkIn);
+                                const paymentStatus = getPaymentStatus(booking);
 
                                 return (
                                     <tr
@@ -200,26 +138,19 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                                                 <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded w-fit">{nights} לילות</span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6 text-gray-600">
-                                            <div className="flex items-center gap-4 text-sm">
-                                                <div className="flex items-center gap-1.5" title="מבוגרים">
-                                                    <User className="h-4 w-4 text-gray-400" />
-                                                    <span className="font-medium">{booking.adults || 1}</span>
+
+                                        {/* PAYMENT COLUMN */}
+                                        <td className="px-8 py-6" onClick={(e) => { e.stopPropagation(); setEditingPayment(booking); }}>
+                                            <div className="flex flex-col gap-1.5 items-start group/pay hover:scale-105 transition-transform">
+                                                <div className={`text-xs font-bold px-2 py-0.5 rounded border ${paymentStatus.color}`}>
+                                                    {paymentStatus.label}
                                                 </div>
-                                                {(booking.children > 0) && (
-                                                    <div className="flex items-center gap-1.5" title="ילדים">
-                                                        <Baby className="h-4 w-4 text-gray-400" />
-                                                        <span className="font-medium">{booking.children}</span>
-                                                    </div>
-                                                )}
-                                                {(booking.pets > 0) && (
-                                                    <div className="flex items-center gap-1.5" title="חיות מחמד">
-                                                        <Cat className="h-4 w-4 text-gray-400" />
-                                                        <span className="font-medium">{booking.pets}</span>
-                                                    </div>
-                                                )}
+                                                <span className="text-sm font-medium text-gray-700 group-hover/pay:text-primary transition-colors">
+                                                    ₪{booking.amount_paid?.toLocaleString() || 0} / ₪{booking.total_price?.toLocaleString() || 0}
+                                                </span>
                                             </div>
                                         </td>
+
                                         <td className="px-8 py-6">
                                             <Badge className={`px-3 py-1 text-sm ${booking.status === 'approved' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
                                                 booking.status === 'declined' ? 'bg-red-100 text-red-700 hover:bg-red-200' :
@@ -229,6 +160,7 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                                                     booking.status === 'declined' ? 'נדחה' : 'ממתין לאישור'}
                                             </Badge>
                                         </td>
+
                                         <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
                                             {booking.status === 'pending' ? (
                                                 <div className="flex items-center gap-3">
@@ -284,6 +216,17 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                     }}
                 />
             )}
+
+            {/* PAYMENT EDIT MODAL */}
+            <PaymentModal
+                isOpen={!!editingPayment}
+                onClose={() => setEditingPayment(null)}
+                booking={editingPayment}
+                onUpdate={() => {
+                    if (onUpdate) onUpdate();
+                    else fetchBookings();
+                }}
+            />
 
             {/* IMMEDIATE TRIGGER MODAL */}
             <ActionConfirmModal
