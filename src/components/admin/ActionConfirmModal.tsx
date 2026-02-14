@@ -1,4 +1,4 @@
-```
+
 import React from 'react';
 import { X, MessageCircle, ExternalLink } from 'lucide-react';
 import { Button } from '../ui/Button';
