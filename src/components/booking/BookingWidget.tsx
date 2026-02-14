@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { addDays, format, differenceInDays, isBefore, isAfter, isWithinInterval, parseISO } from 'date-fns';
-import { ArrowLeft, CheckCircle, XCircle, Search, Users, Minus, Plus, ChevronDown, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, Search, Users, Minus, Plus, ChevronDown, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Calendar } from '../ui/Calendar';
 import { Input } from '../ui/Input';
@@ -19,7 +19,7 @@ const formatDateHebrew = (date: Date) => {
     }).format(date);
 };
 
-export default function BookingWidget() {
+export function BookingWidget() {
     // Stage: 'search' | 'details' | 'confirmation'
     const [stage, setStage] = useState<'search' | 'details' | 'confirmation'>('search');
 
@@ -325,7 +325,7 @@ export default function BookingWidget() {
                             {availabilityStatus === 'min_nights' && (
                                 <div className="animate-in shake bg-orange-50 border border-orange-200 rounded-xl p-4 text-center text-orange-800">
                                     <div className="flex items-center justify-center gap-2 font-medium mb-1">
-                                        <AlertCircle className="h-5 w-5" /> // Used implicit import, need to check if imported
+                                        <AlertCircle className="h-5 w-5" />
                                         מינימום הזמנה
                                     </div>
                                     <p className="text-sm opacity-90">
@@ -393,7 +393,3 @@ export default function BookingWidget() {
         </Card>
     );
 }
-
-// Missing AlertCircle import fixed in next steps if needed, but actually I didn't import it in this file.
-// Wait, I used AlertCircle in min_nights section but didn't import it.
-// I should add it to the imports.
