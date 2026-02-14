@@ -18,7 +18,7 @@ export function PaymentModal({ isOpen, onClose, booking, onUpdate }: PaymentModa
 
     useEffect(() => {
         if (booking) {
-            setAmountPaid(booking.amount_paid.toString());
+            setAmountPaid((booking.amount_paid || 0).toString());
         }
     }, [booking]);
 

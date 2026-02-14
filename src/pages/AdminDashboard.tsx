@@ -57,7 +57,7 @@ export default function AdminDashboard() {
     const calculateStats = (data: Booking[]) => {
         const now = new Date();
         const currentMonthBookings = data.filter(b =>
-            isSameMonth(parseISO(b.check_in), now) && b.status === 'approved'
+            b.check_in && isSameMonth(parseISO(b.check_in), now) && b.status === 'approved'
         );
 
         const monthlyRevenue = currentMonthBookings.reduce((sum, b) => sum + (b.total_price || 0), 0);
@@ -66,7 +66,7 @@ export default function AdminDashboard() {
 
         // Find next check-in
         const futureBookings = data
-            .filter(b => b.status === 'approved' && isAfter(parseISO(b.check_in), startOfDay(now)))
+            .filter(b => b.status === 'approved' && b.check_in && isAfter(parseISO(b.check_in), startOfDay(now)))
             .sort((a, b) => new Date(a.check_in).getTime() - new Date(b.check_in).getTime());
 
         const nextCheckIn = futureBookings[0] || null;
@@ -74,6 +74,7 @@ export default function AdminDashboard() {
         // Simple occupancy (days booked / days in month) - Approximation
         const daysInMonth = 30; // avg
         const bookedDays = currentMonthBookings.reduce((sum, b) => {
+            if (!b.check_in || !b.check_out) return sum;
             return sum + differenceInDays(parseISO(b.check_out), parseISO(b.check_in));
         }, 0);
         const occupancyRate = Math.min(Math.round((bookedDays / (daysInMonth * 2)) * 100), 100); // *2 for 2 units
