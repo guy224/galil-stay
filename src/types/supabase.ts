@@ -28,4 +28,26 @@ export interface Booking {
     children: number;
     infants: number;
     pets: number;
+
+    // Admin Fields
+    source?: string;
+    internal_notes?: string;
+}
+
+export interface Unit {
+    id: string; // 'villa' | 'zimmer'
+    name: string;
+    base_price_weekday: number;
+    base_price_weekend: number;
+    default_min_nights: number;
+}
+
+export interface SeasonalPrice {
+    id: string;
+    unit_id: string;
+    name: string;
+    start_date: string;
+    end_date: string;
+    price_per_night: number;
+    min_nights: number;
 }
