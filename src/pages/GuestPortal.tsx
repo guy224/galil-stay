@@ -8,6 +8,7 @@ import { GateCodeCard } from '../components/guest/GateCodeCard';
 import { BreakfastOrder } from '../components/guest/BreakfastOrder';
 import { QuickActions } from '../components/guest/QuickActions';
 import ZimmerGuestPage from './guest/ZimmerGuestPage';
+import VillaGuestPage from './guest/VillaGuestPage';
 
 export default function GuestPortal() {
     const { id } = useParams<{ id: string }>();
@@ -57,63 +58,19 @@ export default function GuestPortal() {
         );
     }
 
-    // --- NEW: Zimmer Guest Guide Logic ---
+    // --- NEW: Guest Guide Routing ---
     if (booking.unit_type === 'zimmer') {
         return <ZimmerGuestPage booking={booking} />;
     }
 
-    // --- Original Logic (for Villa / Fallback) ---
-    // Calculate days until vacation
-    const today = new Date();
-    const checkIn = parseISO(booking.check_in);
-    const daysUntil = differenceInCalendarDays(checkIn, today);
-
-    let welcomeMessage = "החופשה מתקרבת...";
-    if (daysUntil > 0) {
-        welcomeMessage = `עוד ${daysUntil} ימים לחופשה!`;
-    } else if (daysUntil === 0) {
-        welcomeMessage = "היום זה קורה! ברוכים הבאים.";
-    } else {
-        welcomeMessage = "תהנו מהחופשה!";
+    if (booking.unit_type === 'villa') {
+        return <VillaGuestPage booking={booking} />;
     }
 
+    // --- Fallback (Should not happen if data is correct) ---
     return (
-        <div className="min-h-screen bg-background pb-24">
-            {/* Header */}
-            <div className="bg-primary text-white p-8 rounded-b-3xl shadow-lg text-center relative overflow-hidden">
-                <div className="relative z-10">
-                    <h1 className="text-3xl font-bold mb-2">שלום, {booking.guest_name.split(' ')[0]}</h1>
-                    <p className="text-primary-foreground/90 font-medium text-lg">{welcomeMessage}</p>
-                    <p className="text-sm opacity-75 mt-2">
-                        {booking.unit_type === 'villa' ? 'בית גלילי' : 'צימר בין הנחלים'}
-                        {' • '}
-                        {booking.check_in} עד {booking.check_out}
-                    </p>
-                </div>
-                {/* Decorative circle */}
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
-                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
-            </div>
-
-            <div className="container mx-auto px-4 -mt-6 space-y-6 relative z-10 max-w-md">
-
-                {/* Gate Code Section */}
-                <section>
-                    <GateCodeCard booking={booking} />
-                </section>
-
-                {/* Quick Actions */}
-                <section>
-                    <h3 className="text-lg font-bold mb-3 px-1">פעולות מהירות</h3>
-                    <QuickActions />
-                </section>
-
-                {/* Breakfast Section */}
-                <section>
-                    <BreakfastOrder booking={booking} onUpdate={fetchBooking} />
-                </section>
-
-            </div>
+        <div className="min-h-screen items-center justify-center flex">
+            <p>סוג יחידה לא מזוהה.</p>
         </div>
     );
 }
