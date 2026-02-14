@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { supabase } from '../lib/supabase';
-import { Booking } from '../types/supabase';
+import type { Booking } from '../types/supabase';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { GateCodeCard } from '../components/guest/GateCodeCard';
 import { BreakfastOrder } from '../components/guest/BreakfastOrder';

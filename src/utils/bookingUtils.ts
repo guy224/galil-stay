@@ -1,6 +1,6 @@
 import { differenceInDays, isFriday, isSaturday, isThursday, parseISO, eachDayOfInterval, isWithinInterval, addDays } from 'date-fns';
 import { supabase } from '../lib/supabase';
-import { Unit, SeasonalPrice } from '../types/supabase';
+import type { Unit, SeasonalPrice } from '../types/supabase';
 
 // Helper to fetch pricing rules
 export async function getPricingRules(unitId: string) {

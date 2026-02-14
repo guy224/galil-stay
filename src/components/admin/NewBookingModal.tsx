@@ -3,7 +3,7 @@ import { X, Calendar, User, Save, Upload, Banknote, FileText, Loader2 } from 'lu
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Booking, Unit, SeasonalPrice } from '../../types/supabase';
+import type { Booking, Unit, SeasonalPrice } from '../../types/supabase';
 import { useToast } from '../ui/Toast';
 import { getPricingRules, calculatePrice } from '../../utils/bookingUtils';
 import { parseISO } from 'date-fns';

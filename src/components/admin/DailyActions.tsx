@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Booking } from '../../types/supabase';
+import type { Booking } from '../../types/supabase';
 import { isSameDay, addDays, parseISO, isToday } from 'date-fns';
 import { Car, LogOut, Sun, ArrowRight, MessageCircle } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
 import { ActionConfirmModal } from './ActionConfirmModal';
-import { MessageType } from '../../utils/whatsappUtils';
+import type { MessageType } from '../../utils/whatsappUtils';
 
 interface DailyActionsProps {
     bookings: Booking[];

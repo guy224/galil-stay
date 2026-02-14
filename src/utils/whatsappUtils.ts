@@ -1,4 +1,4 @@
-import { Booking } from '../types/supabase';
+import type { Booking } from '../types/supabase';
 import { format } from 'date-fns';
 
 export type MessageType = 'confirmed' | 'arrival' | 'breakfast' | 'checkout_reminder' | 'late_checkout_offer';

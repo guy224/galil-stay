@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Coffee, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Booking } from '../../types/supabase';
+import type { Booking } from '../../types/supabase';
 import { supabase } from '../../lib/supabase';
 
 interface BreakfastOrderProps {

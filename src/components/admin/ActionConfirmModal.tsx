@@ -1,8 +1,10 @@
+```
 import React from 'react';
 import { X, MessageCircle, ExternalLink } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { Booking } from '../../types/supabase';
-import { generateMessageText, generateWhatsAppLink, MessageType } from '../../utils/whatsappUtils';
+import type { Booking } from '../../types/supabase';
+import { generateMessageText, generateWhatsAppLink } from '../../utils/whatsappUtils';
+import type { MessageType } from '../../utils/whatsappUtils';
 
 interface ActionConfirmModalProps {
     isOpen: boolean;

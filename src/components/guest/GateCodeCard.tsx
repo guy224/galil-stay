@@ -1,7 +1,7 @@
 import React from 'react';
 import { Lock, Unlock, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import { Booking } from '../../types/supabase';
+import type { Booking } from '../../types/supabase';
 import { isBefore, startOfDay, parseISO } from 'date-fns';
 
 interface GateCodeCardProps {

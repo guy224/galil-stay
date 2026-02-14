@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Booking } from '../../types/supabase';
+import type { Booking } from '../../types/supabase';
 import { Phone, Wifi, MapPin, ChevronDown, ChevronUp, Clock, Car, Shield, Tv, Zap, Droplets, Wind, Trees, Coffee, AlertTriangle, Star, CheckCircle } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { X, MessageCircle, Sparkles, Coffee, Check, Save, User, Calendar, Phone, Send } from 'lucide-react';
-import { Booking } from '../../types/supabase';
+import type { Booking } from '../../types/supabase';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { Switch } from '../ui/Switch';
