@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, isAfter, isBefore, startOfDay, addHours } from 'date-fns';
+import { isAfter, isBefore, startOfDay } from 'date-fns';
 import {
     MapPin, Wifi, Key, BookOpen,
-    Coffee, Utensils, Mountain,
-    MessageCircle, Clock, HelpCircle,
-    Lock, Check, Copy, Navigation,
+    MessageCircle,
+    Lock, Navigation,
     ChevronLeft, Star
 } from 'lucide-react';
-import { Button } from '../ui/Button';
 import type { Booking } from '../../types/supabase';
 import { useToast } from '../ui/Toast';
-import { generateWhatsAppLink } from '../../utils/whatsappUtils';
 
 interface GuestLandingPageProps {
     booking: Booking;
@@ -219,6 +216,9 @@ export default function GuestLandingPage({ booking }: GuestLandingPageProps) {
 function ControlCard({ icon: Icon, label, onClick, delay }: any) {
     return (
         <motion.button
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay }}
             whileHover={{ scale: 1.02, backgroundColor: "rgba(255, 255, 255, 0.95)" }}
             whileTap={{ scale: 0.95 }}
             onClick={onClick}
@@ -236,9 +236,12 @@ function ControlCard({ icon: Icon, label, onClick, delay }: any) {
 function DoorCodeCard({ code, isLocked, delay }: { code: string, isLocked: boolean, delay: number }) {
     return (
         <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay }}
             whileHover={{ scale: 1.02 }}
             className={`
-                bg-white/90 backdrop-blur-xl border border-white/40 p-5 rounded-2xl shadow-lg 
+                bg-white/90 backdrop-blur-xl border border-white/40 p-5 rounded-2xl shadow-lg
                 flex flex-col items-center justify-center gap-2 h-32 relative overflow-hidden
                 ${isLocked ? 'grayscale-[0.5]' : ''}
             `}
