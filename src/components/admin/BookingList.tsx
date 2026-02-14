@@ -93,35 +93,35 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
     });
 
     return (
-        <Card className="border-none shadow-sm bg-white overflow-hidden flex flex-col h-full">
-            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b bg-gray-50/50 px-6 py-4 gap-4">
-                <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                        <CardTitle className="text-lg">הזמנות אחרונות</CardTitle>
-                        <Badge variant="secondary" className="rounded-full px-2">
+        <Card className="border border-gray-100 shadow-md shadow-gray-100/50 bg-white rounded-2xl overflow-hidden flex flex-col h-full">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-100 bg-white/50 px-8 py-6 gap-6">
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-3">
+                        <CardTitle className="text-xl font-bold text-gray-900">הזמנות אחרונות</CardTitle>
+                        <Badge variant="secondary" className="rounded-full px-3 py-1 text-sm bg-gray-100 text-gray-700">
                             {filteredBookings.length}
                         </Badge>
                     </div>
                     {filterDate && (
-                        <div className="flex items-center gap-2 text-sm text-primary animate-in fade-in slide-in-from-top-1">
+                        <div className="flex items-center gap-2 text-sm text-primary animate-in fade-in slide-in-from-top-1 bg-blue-50 px-3 py-1 rounded-md w-fit">
                             <span>מציג הזמנות ל- {format(filterDate, 'dd/MM/yyyy')}</span>
                             {onClearFilter && (
                                 <button
                                     onClick={onClearFilter}
-                                    className="text-xs text-gray-400 hover:text-red-500 underline transition-colors"
+                                    className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full p-1 transition-colors"
                                 >
-                                    נקה סינון
+                                    <X className="h-3 w-3" />
                                 </button>
                             )}
                         </div>
                     )}
                 </div>
 
-                <div className="relative w-full sm:w-64">
-                    <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <div className="relative w-full sm:w-80">
+                    <Search className="absolute right-3 top-3 h-5 w-5 text-gray-400" />
                     <Input
-                        placeholder="חיפוש אורח..."
-                        className="pr-9 h-9 bg-white w-full"
+                        placeholder="חיפוש לפי שם או טלפון..."
+                        className="pr-10 h-11 bg-gray-50 border-gray-200 focus:bg-white transition-all w-full rounded-xl"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -129,32 +129,34 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
             </CardHeader>
 
             <div className="overflow-x-auto">
-                <table className="w-full text-sm text-right">
-                    <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b">
+                <table className="w-full text-right">
+                    <thead className="bg-gray-50/50 border-b border-gray-100">
                         <tr>
-                            <th className="px-6 py-3 font-medium">אורח</th>
-                            <th className="px-6 py-3 font-medium">יחידה</th>
-                            <th className="px-6 py-3 font-medium">תאריכים</th>
-                            <th className="px-6 py-3 font-medium">הרכב</th>
-                            <th className="px-6 py-3 font-medium">סטטוס</th>
-                            <th className="px-6 py-3 font-medium">פעולות</th>
+                            <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">אורח</th>
+                            <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">יחידה</th>
+                            <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">תאריכים</th>
+                            <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">הרכב</th>
+                            <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">סטטוס</th>
+                            <th className="px-8 py-5 text-sm font-semibold text-gray-500 tracking-wider">פעולות</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-100 bg-white">
                         {loading ? (
                             <tr>
-                                <td colSpan={6} className="px-6 py-12 text-center">
-                                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
+                                <td colSpan={6} className="px-8 py-20 text-center">
+                                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
                                 </td>
                             </tr>
                         ) : filteredBookings.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                <td colSpan={6} className="px-8 py-20 text-center text-gray-500">
                                     {filterDate ? (
-                                        <div className="flex flex-col items-center gap-2">
-                                            <CalendarOff className="h-8 w-8 text-gray-300" />
-                                            <span>אין הזמנות בתאריך זה</span>
-                                            <Button variant="outline" size="sm" onClick={onClearFilter}>נקה תאריך</Button>
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="p-4 bg-gray-50 rounded-full">
+                                                <CalendarOff className="h-8 w-8 text-gray-300" />
+                                            </div>
+                                            <span className="text-lg">אין הזמנות בתאריך זה</span>
+                                            <Button variant="outline" size="sm" onClick={onClearFilter}>נקה סינון</Button>
                                         </div>
                                     ) : (
                                         'לא נמצאו הזמנות'
@@ -170,87 +172,95 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                                 return (
                                     <tr
                                         key={booking.id}
-                                        className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
+                                        className="hover:bg-blue-50/30 transition-colors group cursor-pointer border-b border-gray-50 last:border-0"
                                         onClick={() => setSelectedBooking(booking)}
                                     >
-                                        <td className="px-6 py-4 font-medium text-gray-900">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                                        <td className="px-8 py-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold text-sm shadow-sm">
                                                     {booking.guest_name.slice(0, 2)}
                                                 </div>
                                                 <div>
-                                                    <div>{booking.guest_name}</div>
-                                                    <div className="text-xs text-gray-500 font-normal">{booking.guest_phone}</div>
+                                                    <div className="font-semibold text-gray-900 text-base">{booking.guest_name}</div>
+                                                    <div className="text-sm text-gray-500 font-normal mt-0.5">{booking.guest_phone}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <Badge variant="outline" className={booking.unit_type === 'villa' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-green-50 text-green-700 border-green-200'}>
-                                                {booking.unit_type === 'villa' ? 'וילה' : 'צימר'}
+                                        <td className="px-8 py-6">
+                                            <Badge variant="outline" className={`px-3 py-1 rounded-md text-sm font-medium ${booking.unit_type === 'villa'
+                                                ? 'bg-blue-50 text-blue-700 border-blue-100'
+                                                : 'bg-green-50 text-green-700 border-green-100'
+                                                }`}>
+                                                {booking.unit_type === 'villa' ? 'וילה בגליל' : 'צימר בין הנחלים'}
                                             </Badge>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="font-medium">{format(checkIn, 'dd/MM')} - {format(checkOut, 'dd/MM')}</span>
-                                                <span className="text-xs text-gray-500">{nights} לילות</span>
+                                        <td className="px-8 py-6">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="font-medium text-gray-900 text-sm">{format(checkIn, 'dd/MM')} - {format(checkOut, 'dd/MM')}</span>
+                                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded w-fit">{nights} לילות</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-gray-500">
-                                            <div className="flex items-center gap-3 text-xs">
-                                                <div className="flex items-center gap-1" title="מבוגרים">
-                                                    <User className="h-3 w-3" /> {booking.adults || 1}
+                                        <td className="px-8 py-6 text-gray-600">
+                                            <div className="flex items-center gap-4 text-sm">
+                                                <div className="flex items-center gap-1.5" title="מבוגרים">
+                                                    <User className="h-4 w-4 text-gray-400" />
+                                                    <span className="font-medium">{booking.adults || 1}</span>
                                                 </div>
                                                 {(booking.children > 0) && (
-                                                    <div className="flex items-center gap-1" title="ילדים">
-                                                        <Baby className="h-3 w-3" /> {booking.children}
+                                                    <div className="flex items-center gap-1.5" title="ילדים">
+                                                        <Baby className="h-4 w-4 text-gray-400" />
+                                                        <span className="font-medium">{booking.children}</span>
                                                     </div>
                                                 )}
                                                 {(booking.pets > 0) && (
-                                                    <div className="flex items-center gap-1" title="חיות מחמד">
-                                                        <Cat className="h-3 w-3" /> {booking.pets}
+                                                    <div className="flex items-center gap-1.5" title="חיות מחמד">
+                                                        <Cat className="h-4 w-4 text-gray-400" />
+                                                        <span className="font-medium">{booking.pets}</span>
                                                     </div>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <Badge variant={
-                                                booking.status === 'approved' ? 'success' :
-                                                    booking.status === 'declined' ? 'destructive' : 'warning'
-                                            }>
+                                        <td className="px-8 py-6">
+                                            <Badge className={`px-3 py-1 text-sm ${booking.status === 'approved' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+                                                booking.status === 'declined' ? 'bg-red-100 text-red-700 hover:bg-red-200' :
+                                                    'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                                                }`}>
                                                 {booking.status === 'approved' ? 'מאושר' :
-                                                    booking.status === 'declined' ? 'נדחה' : 'ממתין'}
+                                                    booking.status === 'declined' ? 'נדחה' : 'ממתין לאישור'}
                                             </Badge>
                                         </td>
-                                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                                        <td className="px-8 py-6" onClick={(e) => e.stopPropagation()}>
                                             {booking.status === 'pending' ? (
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-3">
                                                     <Button
                                                         size="sm"
-                                                        className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700 rounded-full"
+                                                        className="h-9 w-9 p-0 bg-green-600 hover:bg-green-700 rounded-full shadow-sm hover:shadow-md transition-all"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             handleStatusUpdate(booking, 'approved');
                                                         }}
                                                         isLoading={processingId === booking.id}
+                                                        title="אשר הזמנה"
                                                     >
-                                                        <Check className="h-4 w-4" />
+                                                        <Check className="h-5 w-5" />
                                                     </Button>
                                                     <Button
                                                         size="sm"
                                                         variant="ghost"
-                                                        className="h-8 w-8 p-0 text-red-600 hover:bg-red-50 rounded-full"
+                                                        className="h-9 w-9 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             handleStatusUpdate(booking, 'declined');
                                                         }}
                                                         isLoading={processingId === booking.id}
+                                                        title="דחה הזמנה"
                                                     >
-                                                        <X className="h-4 w-4" />
+                                                        <X className="h-5 w-5" />
                                                     </Button>
                                                 </div>
                                             ) : (
-                                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setSelectedBooking(booking)}>
-                                                    <MoreVertical className="h-4 w-4 text-gray-400" />
+                                                <Button size="sm" variant="ghost" className="h-9 w-9 p-0 rounded-full hover:bg-gray-100" onClick={() => setSelectedBooking(booking)}>
+                                                    <MoreVertical className="h-5 w-5 text-gray-400" />
                                                 </Button>
                                             )}
                                         </td>
@@ -270,9 +280,6 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                     onUpdate={() => {
                         if (onUpdate) onUpdate();
                         else fetchBookings();
-                        // We intentionally DON'T reset selectedBooking here if we want to show a toast,
-                        // but for the Modal flow we might just want to close it or keep it open.
-                        // However, the action modal below handles the post-action flow.
                         setSelectedBooking(null);
                     }}
                 />

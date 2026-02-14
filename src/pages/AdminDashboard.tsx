@@ -93,92 +93,108 @@ export default function AdminDashboard() {
     };
 
     return (
-        <div className="space-y-6" dir="rtl">
+        <div className="max-w-[1600px] mx-auto p-8 space-y-10" dir="rtl">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-6">
                 <div>
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600">
+                    <h1 className="text-4xl font-bold text-gray-900 tracking-tight">
                         לוח בקרה
                     </h1>
-                    <p className="text-gray-500 mt-1">סקירה כללית של הפעילות</p>
+                    <p className="text-gray-500 mt-2 text-lg">סקירה כללית של הפעילות</p>
                 </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="flex items-center gap-4 w-full sm:w-auto">
                     <Button
                         variant="outline"
                         size="icon"
+                        className="h-12 w-12 rounded-xl"
                         onClick={() => navigate('/admin/settings')}
                         title="הגדרות ומחירים"
                     >
-                        <Settings className="h-5 w-5" />
+                        <Settings className="h-6 w-6" />
                     </Button>
-                    <Button onClick={() => setIsNewBookingModalOpen(true)} className="w-full sm:w-auto shadow-md hover:shadow-lg transition-all">
-                        <Calendar className="ml-2 h-4 w-4" />
+                    <Button onClick={() => setIsNewBookingModalOpen(true)} className="h-12 px-6 text-lg w-full sm:w-auto shadow-lg shadow-blue-100 hover:shadow-xl transition-all rounded-xl">
+                        <Calendar className="ml-2 h-5 w-5" />
                         הזמנה חדשה
                     </Button>
                 </div>
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <Card className="border-none shadow-sm bg-gradient-to-br from-blue-50 to-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-blue-900">הכנסות החודש</CardTitle>
-                        <CreditCard className="h-4 w-4 text-blue-500" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow bg-white rounded-2xl overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-6">
+                        <CardTitle className="text-base font-medium text-gray-500">הכנסות החודש</CardTitle>
+                        <div className="p-2 bg-blue-50 rounded-lg">
+                            <CreditCard className="h-5 w-5 text-blue-600" />
+                        </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-blue-700">₪{stats.monthlyRevenue.toLocaleString()}</div>
-                        <p className="text-xs text-blue-600/80 mt-1 flex items-center">
+                    <CardContent className="p-6 pt-2">
+                        <div className="text-4xl font-bold text-gray-900">₪{stats.monthlyRevenue.toLocaleString()}</div>
+                        <p className="text-sm text-green-600 mt-2 flex items-center font-medium bg-green-50 w-fit px-2 py-1 rounded-full">
                             <TrendingUp className="h-3 w-3 ml-1" />
                             +12% מחודש שעבר
                         </p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-sm bg-gradient-to-br from-purple-50 to-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-purple-900">תפוסה חודשית</CardTitle>
-                        <Calendar className="h-4 w-4 text-purple-500" />
+                <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow bg-white rounded-2xl overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-6">
+                        <CardTitle className="text-base font-medium text-gray-500">תפוסה חודשית</CardTitle>
+                        <div className="p-2 bg-purple-50 rounded-lg">
+                            <Calendar className="h-5 w-5 text-purple-600" />
+                        </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-purple-700">{stats.occupancyRate}%</div>
-                        <div className="w-full bg-purple-100 rounded-full h-1.5 mt-2">
-                            <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${stats.occupancyRate}%` }}></div>
+                    <CardContent className="p-6 pt-2">
+                        <div className="text-4xl font-bold text-gray-900">{stats.occupancyRate}%</div>
+                        <div className="w-full bg-gray-100 rounded-full h-2 mt-4">
+                            <div className="bg-purple-600 h-2 rounded-full transition-all duration-1000" style={{ width: `${stats.occupancyRate}%` }}></div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-sm bg-gradient-to-br from-orange-50 to-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-orange-900">הזמנות ממתינות</CardTitle>
-                        <AlertCircle className="h-4 w-4 text-orange-500" />
+                <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow bg-white rounded-2xl overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-6">
+                        <CardTitle className="text-base font-medium text-gray-500">הזמנות ממתינות</CardTitle>
+                        <div className="p-2 bg-orange-50 rounded-lg">
+                            <AlertCircle className="h-5 w-5 text-orange-600" />
+                        </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-orange-700">{stats.pendingBookings}</div>
-                        <p className="text-xs text-orange-600/80 mt-1">דורש טיפול</p>
+                    <CardContent className="p-6 pt-2">
+                        <div className="text-4xl font-bold text-gray-900">{stats.pendingBookings}</div>
+                        <p className="text-sm text-orange-600 mt-2 font-medium bg-orange-50 w-fit px-2 py-1 rounded-full">
+                            דורש טיפול מיידי
+                        </p>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-sm bg-gradient-to-br from-green-50 to-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-green-900">צ'ק-אין קרוב</CardTitle>
-                        <Clock className="h-4 w-4 text-green-500" />
+                <Card className="border border-gray-100 shadow-sm hover:shadow-md transition-shadow bg-white rounded-2xl overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-6">
+                        <CardTitle className="text-base font-medium text-gray-500">צ'ק-אין קרוב</CardTitle>
+                        <div className="p-2 bg-green-50 rounded-lg">
+                            <Clock className="h-5 w-5 text-green-600" />
+                        </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-6 pt-2">
                         {stats.nextCheckIn ? (
                             <>
-                                <div className="text-lg font-bold text-green-700 truncate">{stats.nextCheckIn.guest_name}</div>
-                                <p className="text-xs text-green-600/80 mt-1">
-                                    {format(parseISO(stats.nextCheckIn.check_in), 'dd/MM')} - {stats.nextCheckIn.unit_type === 'villa' ? 'וילה' : 'צימר'}
-                                </p>
+                                <div className="text-2xl font-bold text-gray-900 truncate">{stats.nextCheckIn.guest_name}</div>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+                                        {format(parseISO(stats.nextCheckIn.check_in), 'dd/MM')}
+                                    </span>
+                                    <span className={`text-sm px-2 py-1 rounded-md ${stats.nextCheckIn.unit_type === 'villa' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'}`}>
+                                        {stats.nextCheckIn.unit_type === 'villa' ? 'וילה' : 'צימר'}
+                                    </span>
+                                </div>
                             </>
                         ) : (
-                            <div className="text-sm text-green-600/80">אין צ'ק-אין קרוב</div>
+                            <div className="text-xl text-gray-400 font-medium">אין צ'ק-אין קרוב</div>
                         )}
                     </CardContent>
                 </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
                 {/* Main Content - Booking List */}
                 <div className="lg:col-span-2 h-full min-h-[500px]">
                     <BookingList
@@ -190,7 +206,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Sidebar - Actions & Calendar */}
-                <div className="space-y-6 flex flex-col h-full">
+                <div className="space-y-8 flex flex-col h-full">
                     <DailyActions bookings={bookings} onUpdate={fetchDashboardData} />
 
                     <div className="sticky top-6">
