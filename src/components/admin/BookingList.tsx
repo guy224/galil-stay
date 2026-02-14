@@ -8,14 +8,80 @@ import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { PaymentModal } from './PaymentModal';
+import { BookingModal } from './BookingModal';
+import { ActionConfirmModal } from './ActionConfirmModal';
+import type { MessageType } from '../../utils/whatsappUtils';
+import { useToast } from '../ui/Toast';
 
-// ... inside BookingList component ...
+interface BookingListProps {
+    initialBookings: Booking[];
+    onUpdate?: () => void;
+    filterDate?: Date | null;
+    onClearFilter?: () => void;
+}
 
 export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilter }: BookingListProps) {
-    // ... existing state ...
+    const { addToast } = useToast();
+    const [search, setSearch] = useState('');
+    const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [editingPayment, setEditingPayment] = useState<Booking | null>(null);
+    const [processingId, setProcessingId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
-    // ... existing functions ...
+    // Action Confirmation State
+    const [confirmAction, setConfirmAction] = useState<{
+        booking: Booking;
+        type: MessageType;
+        title: string;
+    } | null>(null);
+
+    const filteredBookings = initialBookings.filter(booking => {
+        const matchesSearch =
+            booking.guest_name.toLowerCase().includes(search.toLowerCase()) ||
+            booking.guest_phone.includes(search);
+
+        const matchesDate = filterDate && booking.check_in && booking.check_out
+            ? isWithinInterval(filterDate, {
+                start: parseISO(booking.check_in),
+                end: parseISO(booking.check_out)
+            })
+            : true;
+
+        return matchesSearch && matchesDate;
+    });
+
+    const handleStatusUpdate = async (booking: Booking, newStatus: 'approved' | 'declined') => {
+        setProcessingId(booking.id);
+        try {
+            const { error } = await supabase
+                .from('bookings')
+                .update({ status: newStatus })
+                .eq('id', booking.id);
+
+            if (error) throw error;
+
+            addToast(
+                newStatus === 'approved' ? 'ההזמנה אושרה בהצלחה' : 'ההזמנה נדחתה',
+                newStatus === 'approved' ? 'success' : 'info'
+            );
+
+            if (newStatus === 'approved') {
+                setConfirmAction({
+                    booking,
+                    type: 'confirmed',
+                    title: 'ההזמנה אושרה!'
+                });
+            } else {
+                if (onUpdate) onUpdate();
+            }
+
+        } catch (error) {
+            console.error('Error updating status:', error);
+            addToast('שגיאה בעדכון הסטטוס', 'error');
+        } finally {
+            setProcessingId(null);
+        }
+    };
 
     // Helper to get payment badge color
     const getPaymentStatus = (booking: Booking) => {
@@ -30,7 +96,6 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
         <Card className="border border-gray-100 shadow-md shadow-gray-100/50 bg-white rounded-2xl overflow-hidden flex flex-col h-full">
             {/* ... Header ... */}
             <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-100 bg-white/50 px-8 py-6 gap-6">
-                {/* ... header content ... */}
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-3">
                         <CardTitle className="text-xl font-bold text-gray-900">הזמנות אחרונות</CardTitle>
@@ -86,7 +151,6 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                         ) : filteredBookings.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className="px-8 py-20 text-center text-gray-500">
-                                    {/* ... empty state ... */}
                                     {filterDate ? (
                                         <div className="flex flex-col items-center gap-3">
                                             <div className="p-4 bg-gray-50 rounded-full">
@@ -211,7 +275,7 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                     onClose={() => setSelectedBooking(null)}
                     onUpdate={() => {
                         if (onUpdate) onUpdate();
-                        else fetchBookings();
+                        else if (window.location.reload) window.location.reload(); // Fallback
                         setSelectedBooking(null);
                     }}
                 />
@@ -224,14 +288,17 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                 booking={editingPayment}
                 onUpdate={() => {
                     if (onUpdate) onUpdate();
-                    else fetchBookings();
+                    setEditingPayment(null);
                 }}
             />
 
             {/* IMMEDIATE TRIGGER MODAL */}
             <ActionConfirmModal
                 isOpen={!!confirmAction}
-                onClose={() => setConfirmAction(null)}
+                onClose={() => {
+                    setConfirmAction(null);
+                    if (onUpdate) onUpdate();
+                }}
                 booking={confirmAction?.booking || null}
                 actionType={confirmAction?.type || null}
                 title={confirmAction?.title}
