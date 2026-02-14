@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { format, isSameMonth, parseISO, isAfter, differenceInDays, startOfDay } from 'date-fns';
-import { CreditCard, Calendar, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { CreditCard, Calendar, Clock, TrendingUp, AlertCircle, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { BookingList } from '../components/admin/BookingList';
 import { DashboardCalendar } from '../components/admin/DashboardCalendar';
 import { DailyActions } from '../components/admin/DailyActions';
@@ -13,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button';
 
 export default function AdminDashboard() {
+    const navigate = useNavigate();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
@@ -80,6 +82,9 @@ export default function AdminDashboard() {
                         <p className="text-gray-500 mt-1">סקירה כללית וניהול שוטף</p>
                     </div>
                     <div className="flex gap-3">
+                        <Button variant="outline" onClick={() => navigate('/admin/settings')} title="הגדרות מחירים">
+                            <Settings className="h-5 w-5" />
+                        </Button>
                         <Button variant="outline" onClick={fetchBookings}>
                             רענון נתונים
                         </Button>
