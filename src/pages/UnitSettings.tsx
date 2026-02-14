@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import type { Unit, SeasonalPrice } from '../types/supabase';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Loader2, Plus, Trash2, Save, Calendar } from 'lucide-react';
+import { Loader2, Plus, Trash2, Save, Calendar, CheckCircle } from 'lucide-react';
 import { useToast } from '../components/ui/Toast';
 import { format } from 'date-fns';
 
