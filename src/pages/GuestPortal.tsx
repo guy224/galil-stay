@@ -7,8 +7,7 @@ import { Loader2, AlertCircle } from 'lucide-react';
 import { GateCodeCard } from '../components/guest/GateCodeCard';
 import { BreakfastOrder } from '../components/guest/BreakfastOrder';
 import { QuickActions } from '../components/guest/QuickActions';
-import ZimmerGuestPage from './guest/ZimmerGuestPage';
-import VillaGuestPage from './guest/VillaGuestPage';
+import GuestLandingPage from '../components/guest/GuestLandingPage';
 
 export default function GuestPortal() {
     const { id } = useParams<{ id: string }>();
@@ -58,19 +57,6 @@ export default function GuestPortal() {
         );
     }
 
-    // --- NEW: Guest Guide Routing ---
-    if (booking.unit_type === 'zimmer') {
-        return <ZimmerGuestPage booking={booking} />;
-    }
-
-    if (booking.unit_type === 'villa') {
-        return <VillaGuestPage booking={booking} />;
-    }
-
-    // --- Fallback (Should not happen if data is correct) ---
-    return (
-        <div className="min-h-screen items-center justify-center flex">
-            <p>סוג יחידה לא מזוהה.</p>
-        </div>
-    );
+    // --- NEW: Unified Guest Page ---
+    return <GuestLandingPage booking={booking} />;
 }
