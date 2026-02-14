@@ -82,16 +82,43 @@ export function BookingWidget({ preselectedUnitType }: BookingWidgetProps) {
     useEffect(() => {
         async function fetchData() {
             setIsLoadingData(true);
-            const [unitRes, seasonalRes, bookingsRes] = await Promise.all([
-                supabase.from('units').select('*').eq('id', unitType).single(),
-                supabase.from('seasonal_prices').select('*').eq('unit_id', unitType),
-                supabase.from('bookings').select('*').eq('unit_type', unitType).neq('status', 'declined')
-            ]);
+            try {
+                console.log('Fetching data for unitType:', unitType);
 
-            if (unitRes.data) setUnitRules(unitRes.data as Unit);
-            if (seasonalRes.data) setSeasonalPrices(seasonalRes.data as SeasonalPrice[]);
-            if (bookingsRes.data) setExistingBookings(bookingsRes.data as Booking[]);
-            setIsLoadingData(false);
+                // Fetch Unit Rules
+                const unitRes = await supabase.from('units').select('*').eq('id', unitType).single();
+                if (unitRes.error) {
+                    console.error('Error fetching unit:', unitRes.error);
+                    setError('שגיאה בטעינת נתוני יחידה');
+                    return;
+                }
+                console.log('Fetched Unit:', unitRes.data);
+                setUnitRules(unitRes.data as Unit);
+
+                // Fetch Seasonal Prices
+                const seasonalRes = await supabase.from('seasonal_prices').select('*').eq('unit_id', unitType);
+                if (seasonalRes.error) {
+                    console.error('Error fetching seasonal prices:', seasonalRes.error);
+                } else {
+                    console.log('Fetched Seasonal Prices:', seasonalRes.data);
+                    setSeasonalPrices(seasonalRes.data as SeasonalPrice[]);
+                }
+
+                // Fetch Existing Bookings
+                const bookingsRes = await supabase.from('bookings').select('*').eq('unit_type', unitType).neq('status', 'declined');
+                if (bookingsRes.error) {
+                    console.error('Error fetching bookings:', bookingsRes.error);
+                } else {
+                    console.log('Fetched Bookings:', bookingsRes.data);
+                    setExistingBookings(bookingsRes.data as Booking[]);
+                }
+
+            } catch (err) {
+                console.error('Unexpected error in fetchData:', err);
+                setError('שגיאה בלתי צפויה בטעינת הנתונים');
+            } finally {
+                setIsLoadingData(false);
+            }
         }
         fetchData();
     }, [unitType]);
@@ -116,7 +143,12 @@ export function BookingWidget({ preselectedUnitType }: BookingWidgetProps) {
     };
 
     const calculation = useMemo(() => {
-        if (!dateRange?.from || !dateRange?.to || !unitRules) return null;
+        if (!unitRules) {
+            console.warn('Calculation skipped: unitRules is missing');
+            return null;
+        }
+
+        if (!dateRange?.from || !dateRange?.to) return null;
 
         const checkIn = dateRange.from;
         const checkOut = dateRange.to;
