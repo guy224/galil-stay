@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { X, Calendar, User, Save, Upload, Banknote, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Calendar, User, Save, Upload, Banknote, FileText, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Booking } from '../../types/supabase';
+import { Booking, Unit, SeasonalPrice } from '../../types/supabase';
 import { useToast } from '../ui/Toast';
+import { getPricingRules, calculatePrice } from '../../utils/bookingUtils';
+import { parseISO } from 'date-fns';
 
 interface NewBookingModalProps {
     isOpen: boolean;
@@ -15,13 +17,17 @@ interface NewBookingModalProps {
 export function NewBookingModal({ isOpen, onClose, onSuccess }: NewBookingModalProps) {
     const { addToast } = useToast();
     const [loading, setLoading] = useState(false);
+    const [pricingLoading, setPricingLoading] = useState(false);
+
+    // Pricing Rules State
+    const [rules, setRules] = useState<{ unit: Unit, seasonal: SeasonalPrice[] } | null>(null);
 
     // Form State
     const [formData, setFormData] = useState({
         guest_name: '',
         guest_phone: '',
         guest_email: '',
-        unit_type: 'villa', // default
+        unit_type: 'villa' as 'villa' | 'zimmer', // default
         check_in: '',
         check_out: '',
         adults: 2,
@@ -32,6 +38,32 @@ export function NewBookingModal({ isOpen, onClose, onSuccess }: NewBookingModalP
         source: 'Phone',
         internal_notes: ''
     });
+
+    // Fetch Rules when unit changes
+    useEffect(() => {
+        const fetchRules = async () => {
+            setPricingLoading(true);
+            const data = await getPricingRules(formData.unit_type);
+            if (data) {
+                setRules(data);
+                // Recalculate price if dates are set
+                if (formData.check_in && formData.check_out) {
+                    const priceData = calculatePrice(parseISO(formData.check_in), parseISO(formData.check_out), data.unit, data.seasonal);
+                    setFormData(prev => ({ ...prev, total_price: priceData.totalPrice }));
+                }
+            }
+            setPricingLoading(false);
+        };
+        fetchRules();
+    }, [formData.unit_type]);
+
+    // Recalculate Price when dates change
+    useEffect(() => {
+        if (rules && formData.check_in && formData.check_out) {
+            const priceData = calculatePrice(parseISO(formData.check_in), parseISO(formData.check_out), rules.unit, rules.seasonal);
+            setFormData(prev => ({ ...prev, total_price: priceData.totalPrice }));
+        }
+    }, [formData.check_in, formData.check_out, rules]);
 
     if (!isOpen) return null;
 
@@ -131,15 +163,18 @@ export function NewBookingModal({ isOpen, onClose, onSuccess }: NewBookingModalP
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <label className="text-xs font-medium text-gray-700">יחידה *</label>
-                                <select
-                                    name="unit_type"
-                                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                    value={formData.unit_type}
-                                    onChange={handleChange}
-                                >
-                                    <option value="villa">וילה בגליל</option>
-                                    <option value="zimmer">צימר בין הנחלים</option>
-                                </select>
+                                <div className="relative">
+                                    <select
+                                        name="unit_type"
+                                        className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
+                                        value={formData.unit_type}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="villa">וילה בגליל</option>
+                                        <option value="zimmer">צימר בין הנחלים</option>
+                                    </select>
+                                    {pricingLoading && <Loader2 className="absolute left-3 top-2.5 h-4 w-4 animate-spin text-gray-400" />}
+                                </div>
                             </div>
                             <div className="space-y-1">
                                 <label className="text-xs font-medium text-gray-700">מקור הגעה</label>
@@ -199,6 +234,7 @@ export function NewBookingModal({ isOpen, onClose, onSuccess }: NewBookingModalP
                             <div className="space-y-1">
                                 <label className="text-xs font-medium text-gray-700">מחיר כולל (₪) *</label>
                                 <Input required type="number" name="total_price" value={formData.total_price} onChange={handleChange} placeholder="0" className="text-lg font-bold" />
+                                <p className="text-[10px] text-gray-400">מחושב אוטומטית (ניתן לעריכה)</p>
                             </div>
                             <div className="space-y-1 md:col-span-2">
                                 <label className="text-xs font-medium text-gray-700">הערות פנימיות (מנהל)</label>
