@@ -102,8 +102,8 @@ export function BookingList({ initialBookings, onUpdate, filterDate, onClearFilt
                             </tr>
                         ) : (
                             filteredBookings.map((booking) => {
-                                const checkIn = parseISO(booking.check_in);
-                                const checkOut = parseISO(booking.check_out);
+                                const checkIn = booking.check_in ? parseISO(booking.check_in) : new Date();
+                                const checkOut = booking.check_out ? parseISO(booking.check_out) : new Date();
                                 const nights = differenceInDays(checkOut, checkIn);
                                 const paymentStatus = getPaymentStatus(booking);
 
