@@ -57,8 +57,8 @@ export function Calendar({
                 ...classNames,
             }}
             components={{
-                IconLeft: () => <ChevronRight className="h-4 w-4 text-slate-600" />,
-                IconRight: () => <ChevronLeft className="h-4 w-4 text-slate-600" />,
+                IconLeft: ({ className }) => <ChevronRight className={cn("h-4 w-4 text-slate-600", className)} />,
+                IconRight: ({ className }) => <ChevronLeft className={cn("h-4 w-4 text-slate-600", className)} />,
             }}
             {...props}
         />

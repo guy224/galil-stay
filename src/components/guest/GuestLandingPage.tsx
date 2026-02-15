@@ -1,4 +1,3 @@
-```
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isAfter, isBefore, startOfDay } from 'date-fns';
@@ -140,144 +139,144 @@ export default function GuestLandingPage({ booking }: GuestLandingPageProps) {
 
     const handleWhatsApp = (text: string) => {
         const link = `https://wa.me/972501234567?text=${encodeURIComponent(text)}`;
-window.open(link, '_blank');
+        window.open(link, '_blank');
     };
 
-const handleRecommendationClick = (locationLink: string) => {
-    window.open(locationLink, '_blank');
-};
+    const handleRecommendationClick = (locationLink: string) => {
+        window.open(locationLink, '_blank');
+    };
 
-if (isLoading) {
-    return <LoadingSkeleton />;
-}
+    if (isLoading) {
+        return <LoadingSkeleton />;
+    }
 
-return (
-    <div className="min-h-screen bg-gray-50 text-slate-800 font-sans relative overflow-hidden" dir="rtl">
-        {/* Ambient Background */}
-        <div
-            className="fixed inset-0 z-0 bg-cover bg-center"
-            style={{ backgroundImage: `url("${bgImage}")` }}
-        />
-        <div className="fixed inset-0 z-0 bg-gradient-to-b from-black/40 via-black/20 to-slate-900/90 backdrop-blur-[2px]" />
+    return (
+        <div className="min-h-screen bg-gray-50 text-slate-800 font-sans relative overflow-hidden" dir="rtl">
+            {/* Ambient Background */}
+            <div
+                className="fixed inset-0 z-0 bg-cover bg-center"
+                style={{ backgroundImage: `url("${bgImage}")` }}
+            />
+            <div className="fixed inset-0 z-0 bg-gradient-to-b from-black/40 via-black/20 to-slate-900/90 backdrop-blur-[2px]" />
 
-        <motion.div
-            className="relative z-10 max-w-md mx-auto px-6 py-10 pb-32 min-h-screen flex flex-col"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-        >
-            {/* Header */}
-            <motion.div variants={itemVariants} className="mb-10 text-white mt-4">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.5 }}
-                    className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-sm font-medium mb-3"
-                >
-                    {stayPhase === 'FUTURE' ? 'ניפגש בקרוב 👋' : stayPhase === 'PRESENT' ? 'חופשה נעימה ☀️' : 'תודה שהתארחתם 🙏'}
+            <motion.div
+                className="relative z-10 max-w-md mx-auto px-6 py-10 pb-32 min-h-screen flex flex-col"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                {/* Header */}
+                <motion.div variants={itemVariants} className="mb-10 text-white mt-4">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.5 }}
+                        className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-sm font-medium mb-3"
+                    >
+                        {stayPhase === 'FUTURE' ? 'ניפגש בקרוב 👋' : stayPhase === 'PRESENT' ? 'חופשה נעימה ☀️' : 'תודה שהתארחתם 🙏'}
+                    </motion.div>
+                    <h1 className="text-4xl font-bold tracking-tight mb-2 shadow-sm">
+                        ברוכים הבאים, {firstName}!
+                    </h1>
+                    <p className="text-lg text-white/80 font-light">
+                        החופשה שלכם ב<span className="font-medium text-white">{unitName}</span> מתחילה כאן.
+                    </p>
                 </motion.div>
-                <h1 className="text-4xl font-bold tracking-tight mb-2 shadow-sm">
-                    ברוכים הבאים, {firstName}!
-                </h1>
-                <p className="text-lg text-white/80 font-light">
-                    החופשה שלכם ב<span className="font-medium text-white">{unitName}</span> מתחילה כאן.
-                </p>
-            </motion.div>
 
-            {/* Control Grid */}
-            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4 mb-8">
-                {/* Waze */}
-                <ControlCard
-                    icon={Navigation}
-                    label="נווט לצימר"
-                    onClick={handleWaze}
-                    delay={0.1}
-                />
-
-                {/* WiFi */}
-                <ControlCard
-                    icon={Wifi}
-                    label="התחבר לאינטרנט"
-                    onClick={handleCopyWifi}
-                    delay={0.2}
-                />
-
-                {/* Door Code */}
-                <DoorCodeCard
-                    code={booking.gate_code || '1234'} // Fallback if empty
-                    isLocked={stayPhase === 'FUTURE'}
-                    delay={0.3}
-                />
-
-                {/* House Guide */}
-                <ControlCard
-                    icon={BookOpen}
-                    label="מדריך הבית"
-                    onClick={() => setShowGuideModal(true)}
-                    delay={0.4}
-                />
-            </motion.div>
-
-            {/* VIP Service */}
-            <motion.div variants={itemVariants} className="mb-8">
-                <h3 className="text-white/90 font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
-                    <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                    שירות VIP לאורח
-                </h3>
-                <div className="space-y-3">
-                    <WhatsAppButton
-                        label="ארוחת בוקר"
-                        sub="תפריט והזמנה"
-                        emoji="🍳"
-                        onClick={() => handleWhatsApp(`היי ${firstName}, אשמח לקבל תפריט ארוחת בוקר!`)}
+                {/* Control Grid */}
+                <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4 mb-8">
+                    {/* Waze */}
+                    <ControlCard
+                        icon={Navigation}
+                        label="נווט לצימר"
+                        onClick={handleWaze}
+                        delay={0.1}
                     />
-                    <WhatsAppButton
-                        label="תיאום צ'ק אאוט"
-                        sub="מתי מפנים?"
-                        emoji="⏳"
-                        onClick={() => handleWhatsApp(`היי, רציתי לשאול לגבי שעת הצ'ק אאוט.`)}
-                    />
-                    <WhatsAppButton
-                        label="יש לי שאלה"
-                        sub="אנחנו כאן לכל דבר"
-                        emoji="💬"
-                        onClick={() => handleWhatsApp(`היי, יש לי שאלה לגבי השהות...`)}
-                    />
-                </div>
-            </motion.div>
 
-            {/* REAL Recommendations Carousel */}
-            <motion.div variants={itemVariants} className="mb-4">
-                <h3 className="text-white/90 font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
-                    <MapPin className="h-4 w-4 text-green-400" />
-                    ההמלצות שלנו בגושרים
-                </h3>
-                <div className="flex overflow-x-auto pb-4 gap-4 -mx-6 px-6 no-scrollbar snap-x">
-                    {RECOMMENDATIONS.map((rec) => (
-                        <RecommendationCard
-                            key={rec.id}
-                            title={rec.title}
-                            image={rec.image}
-                            tag={rec.tag}
-                            description={rec.description}
-                            onClick={() => handleRecommendationClick(rec.locationLink)}
+                    {/* WiFi */}
+                    <ControlCard
+                        icon={Wifi}
+                        label="התחבר לאינטרנט"
+                        onClick={handleCopyWifi}
+                        delay={0.2}
+                    />
+
+                    {/* Door Code */}
+                    <DoorCodeCard
+                        code={booking.gate_code || '1234'} // Fallback if empty
+                        isLocked={stayPhase === 'FUTURE'}
+                        delay={0.3}
+                    />
+
+                    {/* House Guide */}
+                    <ControlCard
+                        icon={BookOpen}
+                        label="מדריך הבית"
+                        onClick={() => setShowGuideModal(true)}
+                        delay={0.4}
+                    />
+                </motion.div>
+
+                {/* VIP Service */}
+                <motion.div variants={itemVariants} className="mb-8">
+                    <h3 className="text-white/90 font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                        <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                        שירות VIP לאורח
+                    </h3>
+                    <div className="space-y-3">
+                        <WhatsAppButton
+                            label="ארוחת בוקר"
+                            sub="תפריט והזמנה"
+                            emoji="🍳"
+                            onClick={() => handleWhatsApp(`היי ${firstName}, אשמח לקבל תפריט ארוחת בוקר!`)}
                         />
-                    ))}
+                        <WhatsAppButton
+                            label="תיאום צ'ק אאוט"
+                            sub="מתי מפנים?"
+                            emoji="⏳"
+                            onClick={() => handleWhatsApp(`היי, רציתי לשאול לגבי שעת הצ'ק אאוט.`)}
+                        />
+                        <WhatsAppButton
+                            label="יש לי שאלה"
+                            sub="אנחנו כאן לכל דבר"
+                            emoji="💬"
+                            onClick={() => handleWhatsApp(`היי, יש לי שאלה לגבי השהות...`)}
+                        />
+                    </div>
+                </motion.div>
+
+                {/* REAL Recommendations Carousel */}
+                <motion.div variants={itemVariants} className="mb-4">
+                    <h3 className="text-white/90 font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-wider">
+                        <MapPin className="h-4 w-4 text-green-400" />
+                        ההמלצות שלנו בגושרים
+                    </h3>
+                    <div className="flex overflow-x-auto pb-4 gap-4 -mx-6 px-6 no-scrollbar snap-x">
+                        {RECOMMENDATIONS.map((rec) => (
+                            <RecommendationCard
+                                key={rec.id}
+                                title={rec.title}
+                                image={rec.image}
+                                tag={rec.tag}
+                                description={rec.description}
+                                onClick={() => handleRecommendationClick(rec.locationLink)}
+                            />
+                        ))}
+                    </div>
+                </motion.div>
+
+                <div className="text-center text-white/40 text-xs mt-auto">
+                    © Galil Stay Experience
                 </div>
             </motion.div>
 
-            <div className="text-center text-white/40 text-xs mt-auto">
-                © Galil Stay Experience
-            </div>
-        </motion.div>
-
-        {/* House Guide Modal */}
-        <HouseGuideModal
-            isOpen={showGuideModal}
-            onClose={() => setShowGuideModal(false)}
-        />
-    </div>
-);
+            {/* House Guide Modal */}
+            <HouseGuideModal
+                isOpen={showGuideModal}
+                onClose={() => setShowGuideModal(false)}
+            />
+        </div>
+    );
 }
 
 // --- Sub-Components ---
