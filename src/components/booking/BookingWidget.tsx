@@ -330,10 +330,12 @@ export function BookingWidget({ preselectedUnitType }: BookingWidgetProps) {
 
                             {/* POPOVERS */}
                             {isCalendarOpen && (
-                                <div className="absolute top-[calc(100%+8px)] right-0 left-0 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 p-4 animate-in fade-in zoom-in-95">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-sm font-bold">בחר תאריכים</span>
-                                        <button onClick={() => setIsCalendarOpen(false)} className="p-1 hover:bg-gray-100 rounded-full"><X className="h-4 w-4" /></button>
+                                <div className="absolute top-[calc(100%+8px)] right-0 left-0 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 p-6 animate-in fade-in zoom-in-95">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <span className="text-base font-bold text-slate-900">בחר תאריכים</span>
+                                        <button onClick={() => setIsCalendarOpen(false)} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
+                                            <X className="h-4 w-4 text-slate-600" />
+                                        </button>
                                     </div>
                                     <Calendar
                                         mode="range"
@@ -342,12 +344,13 @@ export function BookingWidget({ preselectedUnitType }: BookingWidgetProps) {
                                         numberOfMonths={1}
                                         disabled={isDateBlocked}
                                         className="w-full"
-                                        classNames={{
-                                            day_selected: "bg-black text-white hover:bg-black focus:bg-black",
-                                            day_today: "bg-gray-100 text-gray-900 font-bold",
-                                        }}
                                     />
-                                    <Button size="sm" className="w-full mt-2" onClick={() => setIsCalendarOpen(false)}>סגור</Button>
+                                    <button
+                                        onClick={() => setIsCalendarOpen(false)}
+                                        className="w-full mt-4 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors"
+                                    >
+                                        סגור
+                                    </button>
                                 </div>
                             )}
 
